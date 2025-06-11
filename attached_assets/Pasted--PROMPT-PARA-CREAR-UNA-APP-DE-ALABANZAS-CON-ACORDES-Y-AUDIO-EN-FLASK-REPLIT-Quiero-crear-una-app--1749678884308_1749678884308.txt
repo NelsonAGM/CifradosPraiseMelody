@@ -1,0 +1,97 @@
+✅ PROMPT PARA CREAR UNA APP DE ALABANZAS CON ACORDES Y AUDIO EN FLASK (REPLIT)
+Quiero crear una app web en Python con Flask, pensada para músicos.
+La idea es poder guardar, ver y transponer alabanzas con acordes, con un reproductor de audio, y tener todo centralizado.
+Estoy usando Replit (versión gratuita), pero quiero que la app quede lista para luego migrarla a un hosting como Render.
+
+🎯 FUNCIONALIDADES QUE DEBE TENER LA APP
+Agregar nuevas canciones/alabanzas:
+
+Campo de título
+
+Campo de letra con acordes (formato tipo [G]Dios está aquí)
+
+Subida de archivo MP3 (input type="file")
+
+Campo para pegar enlace de audio externo (MP3 o YouTube)
+
+Campo de tono original (opcional)
+
+Campo de etiquetas o categoría (opcional)
+
+Vista previa en tiempo real de cómo se verá la canción
+
+Ver canciones guardadas:
+
+Mostrar acordes resaltados
+
+Reproductor de audio:
+
+Si hay archivo subido, usar <audio>
+
+Si hay link de YouTube, usar <iframe>
+
+Botones para transponer tono arriba o abajo (transposición de acordes en tiempo real)
+
+Lista de canciones:
+
+Mostrar títulos con opción de ver
+
+Buscar por nombre o filtrar por etiqueta
+
+Modo presentación:
+
+Versión limpia para tocar en vivo
+
+Botón para agrandar texto o activar fondo oscuro
+
+Base de datos:
+
+Usar un archivo .json o SQLite para guardar las canciones y rutas de audio
+
+Frontend simple pero funcional:
+
+HTML, CSS y algo de JavaScript (sin frameworks grandes)
+
+Editor de letra con acordes que muestre vista previa dinámica
+
+⚙️ ASPECTOS TÉCNICOS PARA REPLIT Y MIGRACIÓN
+Lenguaje: Python 3
+
+Framework: Flask
+
+Archivos:
+
+app.py
+
+/templates para HTML
+
+/static para CSS, JS, y audios subidos
+
+Incluir:
+
+requirements.txt con dependencias
+
+Procfile para despliegue externo (ej. Render)
+
+Usar Werkzeug o Flask para manejo de subida de archivos
+
+📌 OBJETIVO FINAL
+Tener una app accesible desde el navegador donde pueda:
+
+Guardar y editar mis canciones con acordes
+
+Transponer fácilmente el tono
+
+Escuchar el audio (subido o de YouTube)
+
+Usar en vivo desde mi tablet o teléfono
+
+Y que luego pueda exportar fácilmente a un hosting
+
+Con este prompt puedes:
+
+🔹 Pegarlo en Replit Copilot (si tienes acceso)
+
+🔹 Dárselo a un desarrollador para que lo construya
+
+🔹 Usarlo como checklist para ir desarrollando paso a paso
