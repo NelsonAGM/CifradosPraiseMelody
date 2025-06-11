@@ -107,19 +107,107 @@ function transposeChord(chord, semitones) {
 }
 
 /**
- * Format lyrics text with chord highlighting
+ * Format lyrics text with chord highlighting - positioned above text
  * @param {string} lyrics - Raw lyrics text with chords in [chord] format
- * @returns {string} - HTML formatted lyrics with chord spans
+ * @returns {string} - HTML formatted lyrics with chord spans positioned above
  */
 function formatLyricsWithChords(lyrics) {
     if (!lyrics || typeof lyrics !== 'string') {
         return '';
     }
     
-    // Replace chord patterns [chord] with HTML spans
-    return lyrics.replace(/\[([^\]]+)\]/g, function(match, chord) {
-        return `<span class="chord" data-original-chord="${chord}">${chord}</span>`;
+    // Split lyrics into lines for processing
+    const lines = lyrics.split('\n');
+    const formattedLines = [];
+    
+    lines.forEach(line => {
+        if (line.trim() === '') {
+            formattedLines.push('<div class="empty-line">&nbsp;</div>');
+            return;
+        }
+        
+        // Find all chord positions in the line
+        const chordRegex = /\[([^\]]+)\]/g;
+        const chordMatches = [];
+        let match;
+        
+        while ((match = chordRegex.exec(line)) !== null) {
+            chordMatches.push({
+                chord: match[1],
+                position: match.index,
+                fullMatch: match[0],
+                length: match[0].length
+            });
+        }
+        
+        if (chordMatches.length === 0) {
+            // No chords in this line, just add the text
+            formattedLines.push(`<div class="lyrics-line">${line}</div>`);
+            return;
+        }
+        
+        // Remove chord brackets from text to get clean lyrics
+        let cleanText = line;
+        for (let i = chordMatches.length - 1; i >= 0; i--) {
+            const match = chordMatches[i];
+            cleanText = cleanText.substring(0, match.position) + cleanText.substring(match.position + match.length);
+        }
+        
+        // Build segments for positioning
+        const segments = [];
+        let textPos = 0;
+        
+        chordMatches.forEach((chordMatch, index) => {
+            // Adjust position since we removed previous chords
+            let adjustedPos = chordMatch.position;
+            for (let i = 0; i < index; i++) {
+                adjustedPos -= chordMatches[i].length;
+            }
+            
+            // Add text before chord (if any)
+            if (adjustedPos > textPos) {
+                segments.push({
+                    type: 'text',
+                    content: cleanText.substring(textPos, adjustedPos)
+                });
+            }
+            
+            // Add chord
+            segments.push({
+                type: 'chord',
+                content: chordMatch.chord
+            });
+            
+            textPos = adjustedPos;
+        });
+        
+        // Add remaining text
+        if (textPos < cleanText.length) {
+            segments.push({
+                type: 'text',
+                content: cleanText.substring(textPos)
+            });
+        }
+        
+        // Build HTML
+        let html = '<div class="lyrics-line-container"><div class="chord-text-line">';
+        
+        segments.forEach(segment => {
+            if (segment.type === 'chord') {
+                html += `<span class="chord-text-segment">
+                    <span class="chord-above" data-original-chord="${segment.content}">${segment.content}</span>
+                    <span class="text-below">&nbsp;</span>
+                </span>`;
+            } else if (segment.content.trim() !== '') {
+                html += `<span class="text-segment">${segment.content}</span>`;
+            }
+        });
+        
+        html += '</div></div>';
+        formattedLines.push(html);
     });
+    
+    return formattedLines.join('');
 }
 
 /**

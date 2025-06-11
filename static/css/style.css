@@ -91,8 +91,7 @@ body.dark-mode .song-card:hover {
 .song-lyrics {
     font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
     font-size: 16px;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    line-height: 1.2;
     background-color: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
@@ -105,6 +104,69 @@ body.dark-mode .song-lyrics {
     color: #e0e0e0;
 }
 
+/* New styles for lyrics with chords above */
+.lyrics-line-container {
+    margin-bottom: 12px;
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+}
+
+.chord-text-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    line-height: 1;
+}
+
+.chord-text-segment {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-right: 1px;
+    position: relative;
+}
+
+.chord-above {
+    color: var(--chord-color);
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2px;
+    min-height: 16px;
+}
+
+.text-below {
+    font-size: 16px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.text-segment {
+    font-size: 16px;
+    line-height: 1.2;
+    align-self: flex-end;
+    margin-top: 18px;
+}
+
+.lyrics-line {
+    margin-bottom: 6px;
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+    line-height: 1.4;
+    font-size: 16px;
+}
+
+.empty-line {
+    height: 20px;
+    margin-bottom: 6px;
+}
+
+body.dark-mode .chord-above {
+    color: #ffd700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Legacy chord styles for inline chords */
 .chord {
     color: var(--chord-color);
     font-weight: bold;

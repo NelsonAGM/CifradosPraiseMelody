@@ -147,8 +147,8 @@ function transposeSong(direction) {
     // Update transposition counter
     currentTransposition += (direction === 'up') ? 1 : -1;
     
-    // Get all chord elements
-    const chords = songLyrics.querySelectorAll('.chord');
+    // Get all chord elements (both old and new format)
+    const chords = songLyrics.querySelectorAll('.chord, .chord-above');
     chords.forEach(chord => {
         const originalChord = chord.dataset.originalChord || chord.textContent;
         if (!chord.dataset.originalChord) {
@@ -162,8 +162,10 @@ function transposeSong(direction) {
     // Update current key display
     const currentKeySpan = document.getElementById('currentKey');
     if (currentKeySpan) {
-        const originalKey = currentKeySpan.textContent;
-        // This is a simplified key transposition - in reality you'd want more sophisticated logic
+        const originalKey = currentKeySpan.dataset.originalKey || currentKeySpan.textContent;
+        if (!currentKeySpan.dataset.originalKey) {
+            currentKeySpan.dataset.originalKey = originalKey;
+        }
         const newKey = transposeChord(originalKey, currentTransposition);
         currentKeySpan.textContent = newKey;
     }
