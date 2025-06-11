@@ -96,7 +96,8 @@ body.dark-mode .song-card:hover {
     padding: 20px;
     border-radius: 8px;
     border: 1px solid #dee2e6;
-    white-space: pre-line;
+    white-space: pre;
+    overflow-x: auto;
 }
 
 body.dark-mode .song-lyrics {
@@ -155,6 +156,7 @@ body.dark-mode .song-lyrics {
     font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
     line-height: 1.1;
     font-size: 16px;
+    white-space: pre;
 }
 
 .chord-line-simple {
@@ -164,6 +166,7 @@ body.dark-mode .song-lyrics {
     font-size: 14px;
     color: var(--chord-color);
     font-weight: bold;
+    white-space: pre;
 }
 
 body.dark-mode .chord-line-simple {
