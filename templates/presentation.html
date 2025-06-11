@@ -152,7 +152,7 @@
 
         <!-- Lyrics -->
         <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
-            {{ song.lyrics | safe }}
+            {{ song.lyrics }}
         </div>
     </div>
 
@@ -249,7 +249,8 @@
         // Initialize lyrics formatting
         document.addEventListener('DOMContentLoaded', function() {
             const lyricsElement = document.getElementById('songLyrics');
-            const formattedLyrics = formatLyricsWithChords(lyricsElement.textContent);
+            const originalLyrics = lyricsElement.textContent;
+            const formattedLyrics = formatLyricsWithChords(originalLyrics);
             lyricsElement.innerHTML = formattedLyrics;
         });
     </script>
