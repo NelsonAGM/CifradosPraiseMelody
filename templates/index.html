@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Song Library - Worship Songs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-music me-2"></i>Song Library</h1>
+            <a href="{{ url_for('add_song') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add New Song
+            </a>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Search Songs</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search }}" placeholder="Search by title...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="tag" class="form-label">Filter by Tag</label>
+                        <select class="form-select" id="tag" name="tag">
+                            <option value="">All Tags</option>
+                            {% for tag in all_tags %}
+                                <option value="{{ tag }}" {{ 'selected' if tag == tag_filter }}>{{ tag }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Songs List -->
+        {% if songs %}
+            <div class="row">
+                {% for song in songs %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card h-100 song-card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-file-audio me-2 text-primary"></i>
+                                    {{ song.title }}
+                                </h5>
+                                
+                                {% if song.original_key %}
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="fas fa-key me-1"></i>Key: {{ song.original_key }}
+                                        </small>
+                                    </p>
+                                {% endif %}
+                                
+                                {% if song.tags %}
+                                    <div class="mb-2">
+                                        {% for tag in song.tags %}
+                                            <span class="badge bg-secondary me-1">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('view_song', song_id=song.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        <a href="{{ url_for('presentation_mode', song_id=song.id) }}" 
+                                           class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-desktop me-1"></i>Present
+                                        </a>
+                                    </div>
+                                    
+                                    <div class="audio-indicator">
+                                        {% if song.audio_file or song.youtube_id %}
+                                            <i class="fas fa-volume-up text-success" title="Has Audio"></i>
+                                        {% else %}
+                                            <i class="fas fa-volume-mute text-muted" title="No Audio"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-music fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">No songs found</h3>
+                <p class="text-muted">
+                    {% if search or tag_filter %}
+                        Try adjusting your search or filter criteria.
+                    {% else %}
+                        Start building your song library by adding your first song.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('add_song') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Add Your First Song
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}{{ song.title }} - Worship Songs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1>{{ song.title }}</h1>
+                {% if song.original_key %}
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-key me-1"></i>
+                        Original Key: <span id="currentKey">{{ song.original_key }}</span>
+                    </p>
+                {% endif %}
+                {% if song.tags %}
+                    <div class="mb-2">
+                        {% for tag in song.tags %}
+                            <span class="badge bg-secondary me-1">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('presentation_mode', song_id=song.id) }}" 
+                   class="btn btn-success" target="_blank">
+                    <i class="fas fa-desktop me-1"></i>Presentation Mode
+                </a>
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <!-- Transpose Controls -->
+                        <div class="btn-group me-3" role="group">
+                            <button class="btn btn-outline-primary" onclick="transposeSong('down')" title="Transpose Down">
+                                <i class="fas fa-arrow-down me-1"></i>Key Down
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="transposeSong('up')" title="Transpose Up">
+                                <i class="fas fa-arrow-up me-1"></i>Key Up
+                            </button>
+                        </div>
+                        
+                        <!-- Font Size Controls -->
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-secondary" onclick="changeFontSize(-1)" title="Decrease Font Size">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="changeFontSize(1)" title="Increase Font Size">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 text-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Library
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Player -->
+        {% if song.audio_file or song.youtube_id or song.audio_url %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-play me-2"></i>Audio</h5>
+                </div>
+                <div class="card-body">
+                    {% if song.youtube_id %}
+                        <!-- YouTube Player -->
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://www.youtube.com/embed/{{ song.youtube_id }}" 
+                                    title="YouTube video player" frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen></iframe>
+                        </div>
+                    {% elif song.audio_file %}
+                        <!-- HTML5 Audio Player -->
+                        <audio controls class="w-100">
+                            <source src="{{ url_for('uploaded_file', filename=song.audio_file) }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    {% elif song.audio_url %}
+                        <!-- External Audio URL -->
+                        <audio controls class="w-100">
+                            <source src="{{ song.audio_url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Lyrics -->
+        <div class="card">
+            <div class="card-body">
+                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
+                    {{ song.lyrics | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Song</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<strong>{{ song.title }}</strong>"?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('delete_song', song_id=song.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete Song</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTransposition = 0;
+
+function transposeSong(direction) {
+    const songLyrics = document.getElementById('songLyrics');
+    const songId = songLyrics.dataset.songId;
+    
+    // Update transposition counter
+    currentTransposition += (direction === 'up') ? 1 : -1;
+    
+    // Get all chord elements
+    const chords = songLyrics.querySelectorAll('.chord');
+    chords.forEach(chord => {
+        const originalChord = chord.dataset.originalChord || chord.textContent;
+        if (!chord.dataset.originalChord) {
+            chord.dataset.originalChord = originalChord;
+        }
+        
+        const transposedChord = transposeChord(originalChord, currentTransposition);
+        chord.textContent = transposedChord;
+    });
+    
+    // Update current key display
+    const currentKeySpan = document.getElementById('currentKey');
+    if (currentKeySpan) {
+        const originalKey = currentKeySpan.textContent;
+        // This is a simplified key transposition - in reality you'd want more sophisticated logic
+        const newKey = transposeChord(originalKey, currentTransposition);
+        currentKeySpan.textContent = newKey;
+    }
+}
+
+function changeFontSize(delta) {
+    const songLyrics = document.getElementById('songLyrics');
+    const currentSize = parseInt(window.getComputedStyle(songLyrics).fontSize);
+    const newSize = Math.max(12, Math.min(36, currentSize + (delta * 2)));
+    songLyrics.style.fontSize = newSize + 'px';
+}
+
+// Initialize lyrics formatting
+document.addEventListener('DOMContentLoaded', function() {
+    const lyricsElement = document.getElementById('songLyrics');
+    const formattedLyrics = formatLyricsWithChords(lyricsElement.textContent);
+    lyricsElement.innerHTML = formattedLyrics;
+});
+</script>
+{% endblock %}

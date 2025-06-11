@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Add Song - Worship Songs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-plus me-2"></i>Add New Song</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="songForm">
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Song Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+
+                    <!-- Original Key -->
+                    <div class="mb-3">
+                        <label for="original_key" class="form-label">Original Key</label>
+                        <select class="form-select" id="original_key" name="original_key">
+                            <option value="">Select Key (Optional)</option>
+                            <option value="C">C</option>
+                            <option value="C#">C#</option>
+                            <option value="Db">Db</option>
+                            <option value="D">D</option>
+                            <option value="D#">D#</option>
+                            <option value="Eb">Eb</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="F#">F#</option>
+                            <option value="Gb">Gb</option>
+                            <option value="G">G</option>
+                            <option value="G#">G#</option>
+                            <option value="Ab">Ab</option>
+                            <option value="A">A</option>
+                            <option value="A#">A#</option>
+                            <option value="Bb">Bb</option>
+                            <option value="B">B</option>
+                        </select>
+                    </div>
+
+                    <!-- Lyrics with Chords -->
+                    <div class="mb-3">
+                        <label for="lyrics" class="form-label">Lyrics with Chords</label>
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                Use format: [G]Amazing grace how [C]sweet the [G]sound
+                            </small>
+                        </div>
+                        <textarea class="form-control" id="lyrics" name="lyrics" rows="10" 
+                                  placeholder="[G]Amazing grace how [C]sweet the [G]sound&#10;That [D]saved a wretch like [G]me"></textarea>
+                    </div>
+
+                    <!-- Audio Upload -->
+                    <div class="mb-3">
+                        <label for="audio_file" class="form-label">Upload Audio File</label>
+                        <input type="file" class="form-control" id="audio_file" name="audio_file" 
+                               accept=".mp3,.wav,.ogg,.m4a">
+                        <div class="form-text">Supported formats: MP3, WAV, OGG, M4A</div>
+                    </div>
+
+                    <!-- Audio URL -->
+                    <div class="mb-3">
+                        <label for="audio_url" class="form-label">Or Paste Audio/YouTube URL</label>
+                        <input type="url" class="form-control" id="audio_url" name="audio_url" 
+                               placeholder="https://www.youtube.com/watch?v=... or direct MP3 URL">
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="tags" name="tags" 
+                               placeholder="worship, contemporary, hymn (comma separated)">
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="mb-4">
+                        <h5>Live Preview</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="titlePreview" class="h5 mb-3">Song Title Will Appear Here</div>
+                                <div id="lyricsPreview" class="song-lyrics">
+                                    Type lyrics with chords above to see preview...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Song
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title');
+    const lyricsInput = document.getElementById('lyrics');
+    const titlePreview = document.getElementById('titlePreview');
+    const lyricsPreview = document.getElementById('lyricsPreview');
+
+    function updatePreview() {
+        const title = titleInput.value.trim() || 'Song Title Will Appear Here';
+        const lyrics = lyricsInput.value.trim() || 'Type lyrics with chords above to see preview...';
+        
+        titlePreview.textContent = title;
+        lyricsPreview.innerHTML = formatLyricsWithChords(lyrics);
+    }
+
+    titleInput.addEventListener('input', updatePreview);
+    lyricsInput.addEventListener('input', updatePreview);
+});
+</script>
+{% endblock %}
