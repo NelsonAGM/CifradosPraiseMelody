@@ -10,6 +10,22 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy # Importar SQLAlchemy
 from dotenv import load_dotenv # Importar para cargar variables de entorno locales
 
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from functools import wraps # Necesario para el decorador
+
+app = Flask(__name__)
+# Configura una SECRET_KEY para las sesiones de Flask. ¡MUY IMPORTANTE!
+# Usa una cadena larga, aleatoria y compleja. NO la compartas.
+# En Render, esto se configuraría como una variable de entorno llamada SECRET_KEY
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'una_clave_secreta_por_defecto_muy_insegura_cambiala')
+
+# Define tus credenciales (usando variables de entorno de Render)
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'Hacedores2025.') # 'admin' por defecto si no está en Render
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '123qwe.') # 'password' por defecto si no está en Render
+# ¡CAMBIA ESTOS VALORES POR DEFECTO POR ALGO FUERTE EN RENDER!
+
+
 # Cargar variables de entorno desde .env (útil para desarrollo local)
 load_dotenv()
 
@@ -122,6 +138,50 @@ def index():
     all_tags = sorted(list(all_tags_set)) # Ordenar alfabéticamente
 
     return render_template('index.html', songs=songs, search=search_query, tag_filter=tag_filter, all_tags=all_tags)
+
+###
+def login_required_simple(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session or not session['logged_in']:
+            flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            flash('Has iniciado sesión exitosamente.', 'success')
+            return redirect(url_for('index')) # Redirige a tu página principal
+        else:
+            flash('Usuario o contraseña incorrectos.', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    flash('Has cerrado sesión.', 'info')
+    return redirect(url_for('index')) # Redirige a tu página principal
+
+# Aplica el decorador a tus rutas de agregar y editar
+@app.route('/add', methods=['GET', 'POST'])
+@login_required_simple
+def add_song():
+    # ... tu lógica actual para agregar alabanzas
+    pass
+
+@app.route('/song/<int:song_id>/edit', methods=['GET', 'POST'])
+@login_required_simple
+def edit_song(song_id):
+    # ... tu lógica actual para editar alabanzas
+    pass
+####
 
 
 @app.route('/add', methods=['GET', 'POST'])
