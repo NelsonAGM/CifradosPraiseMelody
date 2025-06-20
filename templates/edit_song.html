@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Add Song - Worship Songs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-plus me-2"></i>Agregar nueva alabanza</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="songForm">
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Titulo de alabanza *</label>
+                        <input type="text" class="form-control" id="title" name="title" required value="{{ song.title }}">
+                    </div>
+
+                    <!-- Original Key -->
+                    <div class="mb-3">
+                        <label for="original_key" class="form-label">Tono original</label>
+                        <select class="form-select" id="original_key" name="original_key">
+                            <option value="">Seleccionar tonalidad (opcional)</option>
+                            <option value="C" {% if song.original_key ==  'C' %}selected{% endif %}>C</option>
+                            <option value="C#" {% if song.original_key ==  'C#' %}selected{% endif %}>C</option>
+                            <option value="Db" {% if song.original_key ==  'Db' %}selected{% endif %}>C</option>
+                            <option value="D" {% if song.original_key ==  'D' %}selected{% endif %}>C</option>
+                            <option value="D#" {% if song.original_key ==  'D#' %}selected{% endif %}>C</option>
+                            <option value="Eb" {% if song.original_key ==  'Eb' %}selected{% endif %}>C</option>
+                            <option value="E" {% if song.original_key ==  'E' %}selected{% endif %}>C</option>
+                            <option value="F" {% if song.original_key ==  'F' %}selected{% endif %}>C</option>
+                            <option value="F#" {% if song.original_key ==  'F#' %}selected{% endif %}>C</option>
+                            <option value="Gb" {% if song.original_key ==  'Gb' %}selected{% endif %}>C</option>
+                            <option value="G" {% if song.original_key ==  'G' %}selected{% endif %}>C</option>
+                            <option value="G#" {% if song.original_key ==  'G#' %}selected{% endif %}>C</option>
+                            <option value="Ab" {% if song.original_key ==  'Ab' %}selected{% endif %}>C</option>
+                            <option value="A" {% if song.original_key ==  'A' %}selected{% endif %}>C</option>
+                            <option value="A#" {% if song.original_key ==  'A#' %}selected{% endif %}>C</option>
+                            <option value="Bb" {% if song.original_key ==  'Bb' %}selected{% endif %}>C</option>
+                            <option value="B" {% if song.original_key ==  'B' %}selected{% endif %}>C</option>
+                        </select>
+                    </div>
+
+                    <!-- Lyrics with Chords -->
+                    <div class="mb-3">
+                        <label for="lyrics" class="form-label">Letras con acordes</label>
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                Formato simple: Escribe acordes en líneas separadas arriba de la letra
+                                <br>También puedes usar [Dm7] dentro del texto si prefieres
+                            </small>
+                        </div>
+                        <textarea class="form-control" id="lyrics" name="lyrics" rows="10">{{ song.lyrics }}</textarea>
+                    </div>
+
+                    <!-- Audio Upload -->
+                    <div class="mb-3">
+                        <label for="audio_file" class="form-label">Cargar audio</label>
+                        {% if song.audio_file %}
+                       <p>Archivo actual: {{ song.audio_file }}</p>
+                        {% endif %}
+                        <input type="file" class="form-control" id="audio_file" name="audio_file" 
+                               accept=".mp3,.wav,.ogg,.m4a">
+                        <div class="form-text">Formato soportados: MP3, WAV, OGG, M4A</div>
+                    </div>
+
+                    <!-- Audio URL -->
+                    <div class="mb-3">
+                        <label for="audio_url" class="form-label">o copia el url de youtube</label>
+                        <input type="url" class="form-control" id="audio_url" name="audio_url" 
+                               value="{{ song.audio_url }}">
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="tags" name="tags" 
+                              value="{{ ', '.join(song.tags) }}">
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="mb-4">
+                        <h5>Previsualización</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="titlePreview" class="h5 mb-3">El título de la canción aparecerá aquí</div>
+                                <div id="lyricsPreview" class="song-lyrics">
+                                    La alabanza se previsualizara aqui...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Guardar Alabanza
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live preview functionality
+
+function formatLyricsWithChords(lyrics) {
+    const lines = lyrics.split("\n");
+    const formatted = [];
+
+     // *** FACTOR DE AJUSTE ***
+    // Si el preview es "más pequeño" (el acorde se queda atrás), aumenta este valor (ej. 1.01, 1.02)
+    // Si el preview es "más grande" (el acorde se pasa), disminuye este valor (ej. 0.99, 0.98)
+    const OFFSET_FACTOR = 2.3; // Empieza con 1.01 o 1.02, y ajusta según necesites.
+
+    // Crea un span temporal oculto para medir el ancho del texto
+    const measureSpan = document.createElement('span');
+    measureSpan.style.position = 'absolute';
+    measureSpan.style.visibility = 'hidden';
+    measureSpan.style.whiteSpace = 'pre'; // Crucial para contar espacios como caracteres individuales
+    // Asegúrate de que estos estilos coincidan con .song-lyrics en tu CSS
+    measureSpan.style.fontFamily = 'Corbel, Monaco, Menlo, monospace';
+    // El font-size se establecerá dinámicamente en updatePreview para coincidir con el actual de songLyrics
+    measureSpan.style.lineHeight = '1.2';
+    document.body.appendChild(measureSpan);
+
+    for (let line of lines) {
+        const isEmpty = line.trim() === "";
+
+        if (isEmpty) {
+            formatted.push('<div class="song-line empty-line"></div>');
+            continue;
+        }
+
+        let lineHtmlContent = '';
+        let currentTextForMeasurement = ''; // Acumula el texto para medir su ancho
+        
+        // Divide la línea en segmentos de texto y acordes
+        // Captura el delimitador (el acorde con corchetes)
+        const parts = line.split(/(\[[^\]]+\])/g); 
+
+        parts.forEach(part => {
+            if (part.startsWith('[') && part.endsWith(']')) {
+                // Es un acorde
+                const chordText = part.substring(1, part.length - 1); // Quitar corchetes
+                
+                // Medir el ancho del texto acumulado hasta este punto
+                measureSpan.textContent = currentTextForMeasurement.replace(/ /g, '\u00A0'); // Sustituir espacios por no-breaking spaces
+                const offsetLeft = measureSpan.offsetWidth;
+
+                // Añadir el acorde al HTML de la línea con su posición 'left'
+                lineHtmlContent += `<span class="chord-above" style="left: ${offsetLeft}px;">${chordText}</span>`;
+                
+                // Después de un acorde, no avanzamos el 'currentTextForMeasurement' porque el acorde
+                // no ocupa espacio en el flujo de texto de la letra.
+            } else {
+                // Es texto de la canción (letra o espacios)
+                // Reemplaza los espacios por \u00A0 (non-breaking space) para que no se colapsen
+                const spacedText = part.replace(/ /g, '\u00A0');
+                lineHtmlContent += `<span class="lyrics-segment">${spacedText}</span>`;
+                currentTextForMeasurement += part; // Acumular el texto para la siguiente medición
+            }
+        });
+        
+        formatted.push(`<div class="song-line">${lineHtmlContent}</div>`);
+    }
+
+    // Asegúrate de limpiar el elemento de medición al final
+    document.body.removeChild(measureSpan);
+    return formatted.join("");
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title');
+    const lyricsInput = document.getElementById('lyrics');
+    const titlePreview = document.getElementById('titlePreview');
+    const lyricsPreview = document.getElementById('lyricsPreview');
+
+    // Función principal para actualizar el preview
+    function updatePreview() {
+        const title = titleInput.value.trim() || 'Título de la Alabanza';
+        const lyrics = lyricsInput.value.trim() || 'Escribe la letra y los acordes arriba para ver la previsualización...';
+        
+        // Importante: Antes de generar el HTML, actualizar el font-size del measureSpan
+        // para que coincida con el tamaño real de .song-lyrics en el DOM
+        const tempMeasureSpan = document.body.querySelector('span[style*="visibility: hidden"]');
+        if (tempMeasureSpan) { // Asegurarse de que el span exista antes de intentar modificarlo
+            const computedLyricsFontSize = window.getComputedStyle(document.querySelector('.song-lyrics')).fontSize;
+            tempMeasureSpan.style.fontSize = computedLyricsFontSize;
+        }
+
+        titlePreview.textContent = title;
+        lyricsPreview.innerHTML = formatLyricsWithChords(lyrics);
+    }
+
+    // Configurar los listeners
+    titleInput.addEventListener('input', updatePreview);
+    lyricsInput.addEventListener('input', updatePreview);
+
+    // Llamada inicial para mostrar el preview al cargar la página
+    updatePreview(); 
+});
+
+
+</script>
+{% endblock %}

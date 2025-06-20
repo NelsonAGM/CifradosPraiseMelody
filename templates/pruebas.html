@@ -1,0 +1,83 @@
+
+function formatLyricsWithChords(lyrics) {
+    const lines = lyrics.split("\n");
+    const formatted = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Si la línea está vacía
+        if (line.trim() === "") {
+            formatted.push(`<pre style="margin: 0; white-space: pre;">\u200B</pre>`);
+            continue;
+        }
+
+        // Línea con acordes (entre corchetes)
+        if (line.includes("[") && line.includes("]")) {
+            const html = line.replace(/\[([^\]]+)\]/g, (match, chord) => {
+                return `<span class="chord-above" data-original-chord="${chord}">${chord}</span>`;
+            });
+
+            // Solo la PRIMERA línea (i === 0) con acordes se limpia al inicio
+            if (i === 0) {
+                formatted.push(`<pre style="margin: 0; white-space: pre;">${html.trimStart()}</pre>`);
+            } else {
+                formatted.push(`<pre style="margin: 0; white-space: pre;">${html}</pre>`);
+            }
+        } else {
+            // Línea de letra normal
+            if (i === 0) {
+                formatted.push(`<pre style="margin: 0; white-space: pre;">${line.trimStart()}</pre>`);
+            } else {
+                formatted.push(`<pre style="margin: 0; white-space: pre;">${line}</pre>`);
+            }
+        }
+    }
+
+    return formatted.join("\n");
+}
+
+
+function formatLyricsWithChords(lyrics) {
+    const lines = lyrics.split("\n");
+    const formatted = [];
+
+    for (let line of lines) {
+        const trimmed = line.replace(/^\s+/, '');
+
+        // Si está completamente vacía o solo tiene espacios
+        if (trimmed === "") {
+           formatted.push(`<pre style="margin: 0; white-space: pre-wrap;">${trimmed}</pre>`);
+
+            continue;
+        }
+
+        if (line.includes("[") && line.includes("]")) {
+    const html = line.replace(/\[([^\]]+)\]/g, (match, chord) => {
+        return `<span class="chord-above" data-original-chord="${chord}">${chord}</span>`;
+    });
+    formatted.push(`<pre style="margin:0; white-space:pre-wrap; display:inline-block;">${html.trimStart()}</pre>`);
+} else {
+    formatted.push(`<pre style="margin:0; white-space:pre-wrap; display:inline-block;">${line.trimStart()}</pre>`);
+}
+
+    }
+
+    return formatted.join("\n");
+}
+
+
+ function downloadPDF() {
+        const element = document.querySelector('.song-lyrics');
+        const title = document.querySelector('.song-title')?.textContent || 'alabanza';
+
+        const opt = {
+            margin:       0.5,
+            filename:     `${title}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save();
+    }

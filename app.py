@@ -1,217 +1,281 @@
 import os
-import json
 import uuid
 import logging
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask_sqlalchemy import SQLAlchemy # Importar SQLAlchemy
+from dotenv import load_dotenv # Importar para cargar variables de entorno locales
+
+# Cargar variables de entorno desde .env (útil para desarrollo local)
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+# Usar una variable de entorno para la clave secreta
+# En Render, configurar SESSION_SECRET en las variables de entorno del servicio web.
+# Para desarrollo local, puedes usar el .env o un valor por defecto.
+app.secret_key = os.environ.get("SESSION_SECRET", "una_clave_secreta_muy_larga_y_aleatoria_para_desarrollo")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Configuration
-UPLOAD_FOLDER = 'static/uploads'
+# --- Configuración de la Base de Datos PostgreSQL ---
+# La URL de la base de datos se obtendrá de una variable de entorno en Render ('DATABASE_URL').
+# Para desarrollo local, puedes configurar 'DATABASE_URL' en tu archivo .env.
+# Ejemplo de formato: 'postgresql://user:password@host:port/dbname'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Recomendado para deshabilitar eventos de seguimiento de SQLAlchemy
+
+db = SQLAlchemy(app) # Inicializar SQLAlchemy
+
+# --- Definición del Modelo de Datos (Tabla 'song') ---
+class Song(db.Model):
+    # Nombre de la tabla en la base de datos (opcional, por defecto es el nombre de la clase en minúsculas)
+    __tablename__ = 'songs'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title = db.Column(db.String(255), nullable=False)
+    lyrics = db.Column(db.Text, nullable=False)
+    original_key = db.Column(db.String(10), nullable=True)
+    audio_file = db.Column(db.String(255), nullable=True) # Nombre del archivo subido
+    audio_url = db.Column(db.String(500), nullable=True)  # URL externa (ej. SoundCloud, otro host)
+    youtube_id = db.Column(db.String(50), nullable=True)  # ID de YouTube
+    tags = db.Column(db.String(500), nullable=True) # Almacenaremos tags como una cadena separada por comas
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Song {self.title}>'
+
+    def get_tags_list(self):
+        """Convierte la cadena de tags a una lista."""
+        return [tag.strip() for tag in (self.tags or '').split(',') if tag.strip()]
+
+    def set_tags_list(self, tags_list):
+        """Convierte la lista de tags a una cadena."""
+        self.tags = ','.join(tag.strip() for tag in tags_list if tag.strip())
+
+# --- Configuración de Carga de Archivos ---
+UPLOAD_FOLDER = 'static/uploads' # Los archivos se guardarán aquí
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a'}
-SONGS_FILE = 'songs.json'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Ensure upload directory exists
+# Asegurarse de que la carpeta de carga exista
+# Esto se ejecutará al inicio de la app, importante para desarrollo y para Render (si se usa disco persistente)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def load_songs():
-    """Load songs from JSON file"""
-    try:
-        if os.path.exists(SONGS_FILE):
-            with open(SONGS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception as e:
-        logging.error(f"Error loading songs: {e}")
-    return []
-
-def save_songs(songs):
-    """Save songs to JSON file"""
-    try:
-        with open(SONGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(songs, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        logging.error(f"Error saving songs: {e}")
-        return False
-
 def extract_youtube_id(url):
-    """Extract YouTube video ID from URL"""
+    """Extrae el ID de video de YouTube de varias URLs."""
     if not url:
         return None
     
     parsed_url = urlparse(url)
-    if parsed_url.hostname in ['www.youtube.com', 'youtube.com']:
-        if parsed_url.path == '/watch':
-            return parse_qs(parsed_url.query).get('v', [None])[0]
+    if "youtube.com" in parsed_url.netloc or "youtu.be" in parsed_url.netloc:
+        if parsed_url.netloc == "youtu.be":
+            return parsed_url.path[1:].split('?')[0] # Extraer de youtu.be/VIDEO_ID
+        elif parsed_url.path == '/watch':
+            return parse_qs(parsed_url.query).get('v', [None])[0] # Extraer de youtube.com/watch?v=VIDEO_ID
         elif parsed_url.path.startswith('/embed/'):
-            return parsed_url.path.split('/')[2]
-    elif parsed_url.hostname in ['youtu.be']:
-        return parsed_url.path[1:]
-    
+            return parsed_url.path.split('/embed/')[1].split('?')[0] # Extraer de youtube.com/embed/VIDEO_ID
+        elif parsed_url.path.startswith('/v/'):
+            return parsed_url.path.split('/v/')[1].split('?')[0] # Extraer de youtube.com/v/VIDEO_ID
     return None
+
+# --- Rutas de la Aplicación ---
 
 @app.route('/')
 def index():
-    """Main page with song list"""
-    songs = load_songs()
-    search = request.args.get('search', '').strip()
+    search_query = request.args.get('search', '').strip()
     tag_filter = request.args.get('tag', '').strip()
-    
-    # Filter songs based on search and tag
-    if search:
-        songs = [song for song in songs if search.lower() in song.get('title', '').lower()]
-    
+
+    query = Song.query
+
+    if search_query:
+        # Búsqueda insensible a mayúsculas/minúsculas por título o letra
+        query = query.filter(
+            (Song.title.ilike(f'%{search_query}%')) |
+            (Song.lyrics.ilike(f'%{search_query}%'))
+        )
+
     if tag_filter:
-        songs = [song for song in songs if tag_filter.lower() in [tag.lower() for tag in song.get('tags', [])]]
-    
-    # Get all unique tags for filter dropdown
-    all_tags = set()
-    for song in load_songs():
-        all_tags.update(song.get('tags', []))
-    
-    return render_template('index.html', songs=songs, search=search, tag_filter=tag_filter, all_tags=sorted(all_tags))
+        # Búsqueda de tags: verifica si la cadena de tags contiene el tag filtrado
+        query = query.filter(Song.tags.ilike(f'%{tag_filter}%'))
+
+    # Ordenar por fecha de creación descendente y luego por título ascendente
+    songs = query.order_by(Song.created_at.desc(), Song.title.asc()).all()
+
+    # Obtener todos los tags únicos para el filtro de la UI
+    all_tags_raw = db.session.query(Song.tags).filter(Song.tags.isnot(None)).distinct().all()
+    all_tags_set = set()
+    for tag_str_tuple in all_tags_raw:
+        if tag_str_tuple[0]: # Asegurarse de que la cadena de tags no esté vacía
+            for tag in tag_str_tuple[0].split(','):
+                cleaned_tag = tag.strip()
+                if cleaned_tag:
+                    all_tags_set.add(cleaned_tag)
+    all_tags = sorted(list(all_tags_set)) # Ordenar alfabéticamente
+
+    return render_template('index.html', songs=songs, search=search_query, tag_filter=tag_filter, all_tags=all_tags)
+
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_song():
-    """Add new song"""
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         lyrics = request.form.get('lyrics', '').strip()
         original_key = request.form.get('original_key', '').strip()
         audio_url = request.form.get('audio_url', '').strip()
         tags_str = request.form.get('tags', '').strip()
-        
-        if not title:
-            flash('Title is required', 'error')
-            return render_template('add_song.html')
-        
-        # Process tags
-        tags = [tag.strip() for tag in tags_str.split(',') if tag.strip()] if tags_str else []
-        
-        # Handle file upload
-        audio_file = None
+
+        if not title or not lyrics:
+            flash('Title and lyrics are required!', 'error')
+            return redirect(url_for('add_song'))
+
+        youtube_id = extract_youtube_id(audio_url)
+        audio_file_name = None # Renombrado para evitar confusión con el objeto 'file'
+
         if 'audio_file' in request.files:
             file = request.files['audio_file']
-            if file and file.filename and allowed_file(file.filename):
+            if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                # Add timestamp to avoid conflicts
-                filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                audio_file = filename
-        
-        # Create new song
-        song = {
-            'id': str(uuid.uuid4()),
-            'title': title,
-            'lyrics': lyrics,
-            'original_key': original_key,
-            'current_key': original_key,  # For transposition
-            'audio_file': audio_file,
-            'audio_url': audio_url,
-            'youtube_id': extract_youtube_id(audio_url),
-            'tags': tags,
-            'created_at': datetime.now().isoformat()
-        }
-        
-        songs = load_songs()
-        songs.append(song)
-        
-        if save_songs(songs):
+                try:
+                    file.save(file_path)
+                    audio_file_name = filename # Solo guardamos el nombre del archivo para referenciarlo
+                except Exception as e:
+                    logging.error(f"Error saving audio file: {e}")
+                    flash('Error uploading audio file', 'error')
+                    # No redirigir aquí, dejar que el resto del código maneje la adición de la canción
+
+        new_song = Song(
+            title=title,
+            lyrics=lyrics,
+            original_key=original_key,
+            audio_file=audio_file_name, # Usar el nombre del archivo guardado
+            audio_url=audio_url,
+            youtube_id=youtube_id,
+            created_at=datetime.utcnow()
+        )
+        new_song.set_tags_list(tags_str.split(',')) # Usa el método set_tags_list
+
+        try:
+            db.session.add(new_song)
+            db.session.commit()
             flash('Song added successfully!', 'success')
-            return redirect(url_for('view_song', song_id=song['id']))
-        else:
-            flash('Error saving song', 'error')
-    
+            return redirect(url_for('view_song', song_id=new_song.id))
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error adding song to DB: {e}")
+            flash('Error adding song', 'error')
+
     return render_template('add_song.html')
 
-@app.route('/song/<song_id>')
+@app.route('/song/<string:song_id>') # Usar string para el tipo de ID
 def view_song(song_id):
-    """View individual song"""
-    songs = load_songs()
-    song = next((s for s in songs if s['id'] == song_id), None)
-    
-    if not song:
-        flash('Song not found', 'error')
-        return redirect(url_for('index'))
-    
+    song = Song.query.get_or_404(song_id) # Obtiene la canción o un error 404
+    # Pasar los tags como una lista para el template si es necesario
+    song.tags = song.get_tags_list()
     return render_template('view_song.html', song=song)
 
-@app.route('/song/<song_id>/presentation')
-def presentation_mode(song_id):
-    """Presentation mode for live performance"""
-    songs = load_songs()
-    song = next((s for s in songs if s['id'] == song_id), None)
-    
-    if not song:
-        flash('Song not found', 'error')
-        return redirect(url_for('index'))
-    
-    return render_template('presentation.html', song=song)
+@app.route('/song/<string:song_id>/edit', methods=['GET', 'POST']) # Usar string para el tipo de ID
+def edit_song(song_id):
+    song = Song.query.get_or_404(song_id)
 
-@app.route('/song/<song_id>/transpose', methods=['POST'])
-def transpose_song(song_id):
-    """Transpose song chords"""
-    direction = request.json.get('direction', 'up')
-    semitones = 1 if direction == 'up' else -1
-    
-    songs = load_songs()
-    song_index = next((i for i, s in enumerate(songs) if s['id'] == song_id), None)
-    
-    if song_index is None:
-        return jsonify({'error': 'Song not found'}), 404
-    
-    # This will be handled on the frontend with JavaScript
-    # We just return success here
-    return jsonify({'success': True, 'direction': direction})
+    if request.method == 'POST':
+        song.title = request.form.get('title', '').strip()
+        song.lyrics = request.form.get('lyrics', '').strip()
+        song.original_key = request.form.get('original_key', '').strip()
+        song.audio_url = request.form.get('audio_url', '').strip()
+        song.youtube_id = extract_youtube_id(song.audio_url)
+        tags_str = request.form.get('tags', '').strip()
+        song.set_tags_list(tags_str.split(','))
 
-@app.route('/song/<song_id>/delete', methods=['POST'])
-def delete_song(song_id):
-    """Delete song"""
-    songs = load_songs()
-    song_index = next((i for i, s in enumerate(songs) if s['id'] == song_id), None)
-    
-    if song_index is None:
-        flash('Song not found', 'error')
-        return redirect(url_for('index'))
-    
-    # Delete associated audio file if exists
-    song = songs[song_index]
-    if song.get('audio_file'):
+        # Manejo del archivo de audio
+        if 'audio_file' in request.files:
+            file = request.files['audio_file']
+            if file and allowed_file(file.filename):
+                # Eliminar archivo antiguo si existe antes de guardar el nuevo
+                if song.audio_file and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file)):
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file))
+                    except OSError as e:
+                        logging.error(f"Error deleting old audio file {song.audio_file}: {e}")
+                
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    file.save(file_path)
+                    song.audio_file = filename
+                except Exception as e:
+                    logging.error(f"Error saving new audio file: {e}")
+                    flash('Error uploading new audio file', 'error')
+            elif file.filename == '' and request.form.get('remove_audio_file') == 'on': # Si se marca para eliminar y no se sube uno nuevo
+                if song.audio_file and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file)):
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file))
+                    except OSError as e:
+                        logging.error(f"Error deleting audio file on removal request: {e}")
+                song.audio_file = None
+            # Si no se subió un archivo y no se marcó para eliminar, el audio_file existente se mantiene
+
         try:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], song['audio_file'])
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            db.session.commit()
+            flash('Song updated successfully!', 'success')
+            return redirect(url_for('view_song', song_id=song.id))
         except Exception as e:
-            logging.error(f"Error deleting audio file: {e}")
-    
-    songs.pop(song_index)
-    
-    if save_songs(songs):
+            db.session.rollback()
+            logging.error(f"Error updating song in DB: {e}")
+            flash('Error updating song', 'error')
+
+    # Para el GET request, asegurarse de pasar los tags como una cadena para el campo de texto
+    song.tags_str = ', '.join(song.get_tags_list())
+    return render_template('edit_song.html', song=song)
+
+@app.route('/song/<string:song_id>/delete', methods=['POST']) # Usar string para el tipo de ID
+def delete_song(song_id):
+    song = Song.query.get_or_404(song_id)
+
+    try:
+        # Eliminar el archivo de audio asociado si existe
+        if song.audio_file and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file)):
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], song.audio_file))
+            except OSError as e:
+                logging.error(f"Error deleting audio file {song.audio_file}: {e}")
+
+        db.session.delete(song)
+        db.session.commit()
         flash('Song deleted successfully', 'success')
-    else:
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting song from DB: {e}")
         flash('Error deleting song', 'error')
     
     return redirect(url_for('index'))
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    """Serve uploaded files"""
+    """Serve uploaded files from the UPLOAD_FOLDER"""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+@app.route('/song/<string:song_id>/presentation') # Usar string para el tipo de ID
+def presentation_mode(song_id):
+    song = Song.query.get_or_404(song_id)
+    # Los tags también se pueden pasar como lista si el template presentation.html los necesita así
+    song.tags = song.get_tags_list()
+    return render_template('presentation.html', song=song)
+
+
+# Este bloque se usaba para ejecutar localmente con JSON.
+# Con SQLAclhemy, solo usar para crear tablas en desarrollo local si no usas Alembic.
+# En Render, se usará el 'Build Command' para db.create_all()
+# if __name__ == '__main__':
+#     with app.app_context():
+#         db.create_all() # Esto creará las tablas la primera vez que se ejecute
+#     app.run(debug=True)

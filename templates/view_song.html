@@ -12,7 +12,7 @@
                 {% if song.original_key %}
                     <p class="text-muted mb-2">
                         <i class="fas fa-key me-1"></i>
-                        Original Key: <span id="currentKey">{{ song.original_key }}</span>
+                        Tono original: <span id="currentKey">{{ song.original_key }}</span>
                     </p>
                 {% endif %}
                 {% if song.tags %}
@@ -27,10 +27,14 @@
             <div class="btn-group" role="group">
                 <a href="{{ url_for('presentation_mode', song_id=song.id) }}" 
                    class="btn btn-success" target="_blank">
-                    <i class="fas fa-desktop me-1"></i>Presentation Mode
+                    <i class="fas fa-desktop me-1"></i>Modo Presentacion
                 </a>
+                <a href="{{ url_for('edit_song', song_id=song.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i> Editar
+                </a>
+
                 <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="fas fa-trash me-1"></i>Delete
+                    <i class="fas fa-trash me-1"></i>Borrar
                 </button>
             </div>
         </div>
@@ -43,10 +47,10 @@
                         <!-- Transpose Controls -->
                         <div class="btn-group me-3" role="group">
                             <button class="btn btn-outline-primary" onclick="transposeSong('down')" title="Transpose Down">
-                                <i class="fas fa-arrow-down me-1"></i>Key Down
+                                <i class="fas fa-arrow-down me-1"></i>Bajar tono
                             </button>
                             <button class="btn btn-outline-primary" onclick="transposeSong('up')" title="Transpose Up">
-                                <i class="fas fa-arrow-up me-1"></i>Key Up
+                                <i class="fas fa-arrow-up me-1"></i>Subir Tono
                             </button>
                         </div>
                         
@@ -58,12 +62,16 @@
                             <button class="btn btn-outline-secondary" onclick="changeFontSize(1)" title="Increase Font Size">
                                 <i class="fas fa-plus"></i>
                             </button>
+                            <button type="button" class="btn btn-outline-danger" id="downloadPdfButton">
+                         <i class="fas fa-file-pdf me-1"></i> Descargar PDF
+                             </button>
                         </div>
+                        
                     </div>
                     
                     <div class="col-md-6 text-md-end">
                         <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-1"></i>Back to Library
+                            <i class="fas fa-arrow-left me-1"></i>Regresar a Biblioteca
                         </a>
                     </div>
                 </div>
@@ -89,13 +97,13 @@
                         <!-- HTML5 Audio Player -->
                         <audio controls class="w-100">
                             <source src="{{ url_for('uploaded_file', filename=song.audio_file) }}" type="audio/mpeg">
-                            Your browser does not support the audio element.
+                            Tu navegador no soporta el formato de audio.
                         </audio>
                     {% elif song.audio_url %}
                         <!-- External Audio URL -->
                         <audio controls class="w-100">
                             <source src="{{ song.audio_url }}" type="audio/mpeg">
-                            Your browser does not support the audio element.
+                            Tu navegador no soporta el formato de audio.
                         </audio>
                     {% endif %}
                 </div>
@@ -105,8 +113,12 @@
         <!-- Lyrics -->
         <div class="card">
             <div class="card-body">
+
                 <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
-                    {{ song.lyrics }}
+                    
+                     
+
+
                 </div>
             </div>
         </div>
@@ -118,7 +130,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Delete Song</h5>
+                <h5 class="modal-title">Borrar Alabanza</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -126,18 +138,58 @@
                 <p class="text-muted">This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form method="POST" action="{{ url_for('delete_song', song_id=song.id) }}" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Delete Song</button>
+                    <button type="submit" class="btn btn-danger">Borrar Alabanza</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script >
+//
+function formatLyricsWithChords(lyrics) {
+    const lines = lyrics.split("\n");
+    const formatted = [];
+
+    for (let line of lines) {
+        const isEmpty = line.trim() === "";
+
+        if (isEmpty) {
+            // Usa un div para las líneas vacías para control de espacio
+            formatted.push('<div class="song-line empty-line"></div>');
+            continue;
+        }
+
+        // Procesar línea con acordes
+        // Asegúrate de que los acordes se envuelvan en span.chord-above
+        // y que la línea completa se envuelva en un div.song-line
+        const htmlLineContent = line.replace(/\[([^\]]+)\]/g, (match, chord) => {
+            return `<span class="chord-above" data-original-chord="${chord}">${chord}</span>`;
+        });
+        
+        // ¡CAMBIO CLAVE AQUÍ! Usamos un DIV con la clase song-line en lugar de PRE
+        formatted.push(`<div class="song-line">${htmlLineContent}</div>`);
+    }
+
+    return formatted.join(""); // Usa join("") para que no haya \n entre los divs
+}
+
+// ... (el resto de tu JavaScript como `currentTransposition = 0;`) ...
+
+// Modificación en la función `transposeSong`
+
+
+
+
+
+//
 let currentTransposition = 0;
 
 function transposeSong(direction) {
@@ -147,11 +199,12 @@ function transposeSong(direction) {
     // Update transposition counter
     currentTransposition += (direction === 'up') ? 1 : -1;
     
-    // Get all chord elements (both old and new format)
-    const chords = songLyrics.querySelectorAll('.chord, .chord-above');
+    // Get all chord elements
+    // ¡CAMBIO AQUÍ! Ahora solo buscamos los acordes con la clase 'chord-above'
+    const chords = songLyrics.querySelectorAll('.chord-above'); 
     chords.forEach(chord => {
         const originalChord = chord.dataset.originalChord || chord.textContent;
-        if (!chord.dataset.originalChord) {
+        if (!chord.dataset.originalChord) { // Aquí es originalChord, no originalKey
             chord.dataset.originalChord = originalChord;
         }
         
@@ -171,19 +224,48 @@ function transposeSong(direction) {
     }
 }
 
+
 function changeFontSize(delta) {
     const songLyrics = document.getElementById('songLyrics');
     const currentSize = parseInt(window.getComputedStyle(songLyrics).fontSize);
-    const newSize = Math.max(12, Math.min(36, currentSize + (delta * 2)));
+    const newSize = Math.max(5, Math.min(36, currentSize + (delta * 2)));
     songLyrics.style.fontSize = newSize + 'px';
 }
 
 // Initialize lyrics formatting
 document.addEventListener('DOMContentLoaded', function() {
     const lyricsElement = document.getElementById('songLyrics');
-    const originalLyrics = lyricsElement.textContent;
-    const formattedLyrics = formatLyricsWithChords(originalLyrics);
+    const rawLyrics = {{ song.lyrics | tojson | safe }};
+    const formattedLyrics = formatLyricsWithChords(rawLyrics);
     lyricsElement.innerHTML = formattedLyrics;
+
+    // Listener para el botón "Descargar PDF"
+    const downloadPdfButton = document.getElementById('downloadPdfButton');
+    if (downloadPdfButton) {
+        downloadPdfButton.addEventListener('click', function() {
+            // Selecciona el elemento que quieres convertir a PDF
+            // En este caso, el contenido principal de la canción
+            const element = document.getElementById('songLyrics'); 
+
+            // Configuración de html2pdf.js
+            const opt = {
+                margin: 0.5, // Margen en pulgadas
+                filename: '{{ song.title}}.pdf', // Nombre del archivo PDF
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, logging: true, dpi: 192, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Genera el PDF
+            html2pdf().set(opt).from(element).save();
+        });
+    }
 });
+
+
+
+
+
 </script>
 {% endblock %}
+

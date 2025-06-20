@@ -1,12 +1,17 @@
 [project]
-name = "repl-nix-workspace"
+name = "repl-nix-workspace" # Puede ser diferente en tu proyecto
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "email-validator>=2.2.0",
-    "flask>=3.1.1",
+    "flask>=3.1.1",          # Mantén tu versión de Flask si quieres
     "flask-sqlalchemy>=3.1.1",
-    "gunicorn>=23.0.0",
-    "psycopg2-binary>=2.9.10",
+    "gunicorn>=21.2.0",      # Puedes usar esta versión (la que te había dado) o la 23.0.0 que tienes
+    "psycopg2-binary>=2.9.10", # Tu versión está bien
+    "python-dotenv>=1.0.0",  # ¡Añade esta línea!
 ]
+
+[build-system]
+requires = ["poetry-core"] # Esto es estándar si usas poetry
+build-backend = "poetry.core.masonry.api"

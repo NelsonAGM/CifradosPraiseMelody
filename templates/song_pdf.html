@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ song.title }}</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #fff;
+      color: #000;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 40px;
+    }
+
+    .lyrics-container {
+      background: #fafafa;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+    }
+
+    .line {
+        position: absolute;
+      margin-bottom: 20px;
+      min-height: 0.3em;
+    margin-bottom: 0.3em;
+    line-height: 0;
+    }
+
+    .chord {
+      color: #c0392b;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>{{ song.title }}</h1>
+  <div class="lyrics-container">
+    {% set lines = song.lyrics.split('\n') %}
+    {% for i in range(lines|length) %}
+      {% set line = lines[i] %}
+      {% if '[' in line and ']' in line %}
+        <div class="line">
+          {{ line|replace('[','<span class="chord">')|replace(']','</span>')|safe }}
+        </div>
+      {% else %}
+        <div class="line">{{ line }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</body>
+</html>

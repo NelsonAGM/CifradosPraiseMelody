@@ -16,7 +16,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-music me-2"></i>Worship Songs
+                 <img src="{{ url_for('static', filename='IMAGENES/HCDRS.PNG') }}" alt="Logo" style="height: 54px; margin-right: 8px;"> Cifrados HCDRS
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -32,14 +32,14 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('add_song') }}">
-                            <i class="fas fa-plus me-1"></i>Add Song
+                            <i class="fas fa-plus me-1"></i>Agregar alabanza
                         </a>
                     </li>
                 </ul>
                 
                 <div class="navbar-nav">
                     <button class="btn btn-outline-light btn-sm" id="darkModeToggle">
-                        <i class="fas fa-moon me-1"></i>Dark Mode
+                        <i class="fas fa-moon me-1"></i>Modo oscuro 
                     </button>
                 </div>
             </div>
