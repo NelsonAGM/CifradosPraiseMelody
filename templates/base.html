@@ -32,18 +32,24 @@
                             <i class="fas fa-home me-1"></i>Home
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('add_song') }}">
-                            <i class="fas fa-plus me-1"></i>Agregar alabanza
-                        </a>
-                    </li>
-                </ul>
-                
+                      {% if session.logged_in %} {# Verifica si el usuario está logueado #}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('add_song') }}">Agregar Alabanza</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('logout') }}">Cerrar Sesión</a> {# Enlace para cerrar sesión #}
+    </li>
+    {% else %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('login') }}">Iniciar Sesión</a> {# Enlace para iniciar sesión si no está logueado #}
+    </li>
+    {% endif %}
                 <div class="navbar-nav">
                     <button class="btn btn-outline-light btn-sm" id="darkModeToggle">
                         <i class="fas fa-moon me-1"></i>Modo oscuro 
                     </button>
                 </div>
+                
             </div>
         </div>
     </nav>
