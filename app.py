@@ -169,18 +169,6 @@ def logout():
     flash('Has cerrado sesión.', 'info')
     return redirect(url_for('index')) # Redirige a tu página principal
 
-# Aplica el decorador a tus rutas de agregar y editar
-@app.route('/add', methods=['GET', 'POST'])
-@login_required_simple
-def add_song():
-    # ... tu lógica actual para agregar alabanzas
-    pass
-
-@app.route('/song/<int:song_id>/edit', methods=['GET', 'POST'])
-@login_required_simple
-def edit_song(song_id):
-    # ... tu lógica actual para editar alabanzas
-    pass
 ####
 
 
