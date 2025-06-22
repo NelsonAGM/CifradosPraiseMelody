@@ -87,13 +87,66 @@ class Song(db.Model):
         return f'<Song {self.title}>'
 
     def get_tags_list(self):
-        """Convierte la cadena de tags a una lista."""
-        return [tag.strip() for tag in (self.tags or '').split(',') if tag.strip()]
+        """
+        Convierte la cadena de tags almacenada en la DB a una lista de tags limpios.
+        Maneja entradas tipo "J,u,b,i,l,o" intentando reconstruir el tag original
+        si detecta que son solo letras separadas por comas.
+        """
+        raw_tags_str = self.tags or ''
+        
+        # Primero, intentar identificar y reconstruir un solo tag si está en el formato "J,u,b,i,l,o"
+        # Esto es para la LECTURA desde la DB si ya hay datos corrompidos.
+        if raw_tags_str and ',' in raw_tags_str:
+            parts = [p.strip() for p in raw_tags_str.split(',') if p.strip()]
+            # Si todas las partes son de un solo carácter, asumimos que es un tag "descompuesto"
+            if all(len(p) == 1 for p in parts):
+                reconstructed_tag = ''.join(parts)
+                # Devolvemos una lista con el tag reconstruido
+                return [reconstructed_tag]
+        
+        # Si no es un tag descompuesto (o no tiene comas), procesar normalmente
+        # Eliminar duplicados y ordenar para consistencia
+        cleaned_tags = sorted(list(set(tag.strip() for tag in raw_tags_str.split(',') if tag.strip())))
+        return cleaned_tags
 
-    def set_tags_list(self, tags_list):
-        """Convierte la lista de tags a una cadena."""
-        cleaned_tags = sorted(list(set(tag.strip() for tag in tags_list if tag and tag.strip())))
-        self.tags = ','.join(cleaned_tags) if cleaned_tags else None
+
+    def set_tags_list(self, tags_input):
+        """
+        Normaliza y guarda los tags en la base de datos.
+        Acepta una cadena o una lista. Limpia espacios, elimina duplicados,
+        y filtra tags vacíos. **Intenta unificar tags "descompuestos" (J,u,b,i,l,o -> Jubilo).**
+        """
+        # 1. Asegurarse de que tags_input sea una cadena para el primer split
+        if isinstance(tags_input, list):
+            # Si ya es una lista, la convertimos a una cadena temporal para el procesamiento inicial
+            # Esto es clave si tags_input.split(',') ya se había hecho antes de llamar a set_tags_list
+            tags_str = ','.join(tags_input)
+        elif tags_input is None:
+            tags_str = ''
+        else:
+            tags_str = str(tags_input)
+
+        # Usar re.split para manejar comas, múltiples espacios, o combinaciones como separadores.
+        # Esto dividirá "tag1, tag2", "tag1,,tag2", "tag1 tag2" (si ' ' es separador)
+        # o "J,u,b,i,l,o" en ['J', 'u', 'b', 'i', 'l', 'o'] inicialmente.
+        raw_parts = [p.strip() for p in re.split(r'[,\s]+', tags_str) if p.strip()]
+        
+        final_tags = []
+        
+        # Si detectamos que la entrada son caracteres individuales, intentamos reconstruir un solo tag.
+        # Esto es para cuando el usuario escribe "J,u,b,i,l,o" O si ya viene así de algún lado.
+        if all(len(p) == 1 for p in raw_parts) and len(raw_parts) > 1:
+            # Si todas las partes son de un solo carácter, las unimos en un solo tag.
+            final_tags.append(''.join(raw_parts))
+        else:
+            # Si no es el caso anterior, procesamos como tags normales
+            final_tags = raw_parts
+
+        # Eliminar duplicados y ordenar para consistencia final
+        cleaned_and_unique_tags = sorted(list(set(tag for tag in final_tags if tag)))
+        
+        # Guardar como cadena separada por comas, o None si no hay tags válidos
+        self.tags = ','.join(cleaned_and_unique_tags) if cleaned_and_unique_tags else None
 
 # --- Configuración de Carga de Archivos ---
 UPLOAD_FOLDER = 'static/uploads' # Los archivos se guardarán aquí
