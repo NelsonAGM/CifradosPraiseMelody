@@ -92,7 +92,7 @@ class Song(db.Model):
 
     def set_tags_list(self, tags_list):
         """Convierte la lista de tags a una cadena."""
-        cleaned_tags = [tag.strip() for tag in tags_list if tag and tag.strip()]
+        cleaned_tags = sorted(list(set(tag.strip() for tag in tags_list if tag and tag.strip())))
         self.tags = ','.join(cleaned_tags) if cleaned_tags else None
 
 # --- Configuración de Carga de Archivos ---
