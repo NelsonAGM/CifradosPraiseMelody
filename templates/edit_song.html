@@ -22,6 +22,7 @@
                         <label for="original_key" class="form-label">Tono original</label>
                         <select class="form-select" id="original_key" name="original_key">
                             <option value="">Seleccionar tonalidad (opcional)</option>
+                            <optgroup label = "Tonalidades Mayores">
                             <option value="C" {% if song.original_key ==  'C' %}selected{% endif %}>C</option>
                             <option value="C#" {% if song.original_key ==  'C#' %}selected{% endif %}>C#</option>
                             <option value="Db" {% if song.original_key ==  'Db' %}selected{% endif %}>Db</option>
@@ -39,6 +40,21 @@
                             <option value="A#" {% if song.original_key ==  'A#' %}selected{% endif %}>A#</option>
                             <option value="Bb" {% if song.original_key ==  'Bb' %}selected{% endif %}>Bb</option>
                             <option value="B" {% if song.original_key ==  'B' %}selected{% endif %}>B</option>
+                            </optgroup>
+                            <optgroup label = "Tonalidades menores">
+                            <option value="Cm" {% if song.original_key == 'Cm' %}selected{% endif %}>C Menor</option>
+                            <option value="C#m" {% if song.original_key == 'C#m' %}selected{% endif %}>C# Menor</option>
+                            <option value="Dm" {% if song.original_key == 'Dm' %}selected{% endif %}>D Menor</option>
+                            <option value="D#m" {% if song.original_key == 'D#m' %}selected{% endif %}>D# Menor</option>
+                            <option value="Em" {% if song.original_key == 'Em' %}selected{% endif %}>E Menor</option>
+                            <option value="Fm" {% if song.original_key == 'Fm' %}selected{% endif %}>F Menor</option>
+                            <option value="F#m" {% if song.original_key == 'F#m' %}selected{% endif %}>F# Menor</option>
+                            <option value="Gm" {% if song.original_key == 'Gm' %}selected{% endif %}>G Menor</option>
+                            <option value="G#m" {% if song.original_key == 'G#m' %}selected{% endif %}>G# Menor</option>
+                            <option value="Am" {% if song.original_key == 'Am' %}selected{% endif %}>A Menor</option>
+                            <option value="A#m" {% if song.original_key == 'A#m' %}selected{% endif %}>A# Menor</option>
+                            <option value="Bm" {% if song.original_key == 'Bm' %}selected{% endif %}>B Menor</option>   
+                            </optgroup>
                         </select>
                     </div>
 
