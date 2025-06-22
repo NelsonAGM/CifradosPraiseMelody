@@ -458,3 +458,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 .lyrics-segment {
     white-space: pre; /* Esto es CLAVE: asegura que los &nbsp; y espacios se respeten como en un <pre> */
 }
+
+.fa-music {
+    margin-right: 8px; /* O el valor que consideres adecuado, por ejemplo, 5px, 10px */
+}
