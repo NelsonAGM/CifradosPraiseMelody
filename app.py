@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import re
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from werkzeug.utils import secure_filename
