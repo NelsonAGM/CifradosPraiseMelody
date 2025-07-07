@@ -272,11 +272,37 @@ def add_song():
 
     return render_template('add_song.html')
 
+def procesar_lineas_con_acordes(lyrics):
+    resultado = []
+    for linea in lyrics.split('\n'):
+        acordes = ''
+        texto = ''
+        idx = 0
+        while idx < len(linea):
+            if linea[idx] == '[':
+                fin = linea.find(']', idx)
+                if fin != -1:
+                    acorde = linea[idx+1:fin]
+                    acordes += f'<span class="chord">{acorde}</span>'
+                    texto += ' ' * len(acorde)
+                    idx = fin + 1
+                else:
+                    texto += linea[idx]
+                    acordes += ' '
+                    idx += 1
+            else:
+                texto += linea[idx]
+                acordes += ' '
+                idx += 1
+        resultado.append({'acordes': acordes.rstrip(), 'letra': texto.rstrip()})
+    return resultado
+
 @app.route('/song/<string:song_id>') # Usar string para el tipo de ID
 def view_song(song_id):
     song = Song.query.get_or_404(song_id) # Obtiene la canción o un error 404
     tags_list = song.get_tags_list()
-    return render_template('view_song.html', song=song, tags_list=tags_list)
+    lineas_procesadas = procesar_lineas_con_acordes(song.lyrics)
+    return render_template('view_song.html', song=song, tags_list=tags_list, lineas_procesadas=lineas_procesadas)
 
 @app.route('/song/<string:song_id>/edit', methods=['GET', 'POST']) # Usar string para el tipo de ID
 @login_required_simple 
