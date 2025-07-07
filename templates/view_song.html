@@ -15,9 +15,9 @@
                         Tono original: <span id="currentKey">{{ song.original_key }}</span>
                     </p>
                 {% endif %}
-                {% if song.get_tags_list() %}
+                {% if song.tags %}
                     <div class="mb-2">
-                        {% for tag in song.get_tags_list() %}
+                        {% for tag in song.tags %}
                             <span class="badge bg-secondary me-1">{{ tag }}</span>
                         {% endfor %}
                     </div>
@@ -62,9 +62,9 @@
                             <button class="btn btn-outline-secondary" onclick="changeFontSize(1)" title="Increase Font Size">
                                 <i class="fas fa-plus"></i>
                             </button>
-                            <a href="{{ url_for('song_pdf', song_id=song.id) }}" target="_blank" class="btn btn-outline-danger">
-                                <i class="fas fa-file-pdf me-1"></i> Descargar PDF
-                            </a>
+                            <button type="button" class="btn btn-outline-danger" id="downloadPdfButton">
+                         <i class="fas fa-file-pdf me-1"></i> Descargar PDF
+                             </button>
                         </div>
                         
                     </div>
@@ -113,8 +113,12 @@
         <!-- Lyrics -->
         <div class="card">
             <div class="card-body">
-                <div class="song-lyrics">
-                    <pre class="song-lyrics" style="background: none; border: none; padding: 0; margin: 0; font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics|replace('[','<span class="chord">')|replace(']','</span>')|safe }}</pre>
+
+                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
+                    
+                     
+
+
                 </div>
             </div>
         </div>
