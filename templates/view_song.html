@@ -113,12 +113,8 @@
         <!-- Lyrics -->
         <div class="card">
             <div class="card-body">
-
-                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}" style="font-family: 'Courier New', 'Consolas', monospace; font-size: 16px;">
-                    {% for linea in lineas_procesadas %}
-                        <div style="white-space: pre;"><span class="chord-line">{{ linea.acordes|safe }}</span></div>
-                        <div style="white-space: pre;">{{ linea.letra }}</div>
-                    {% endfor %}
+                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
+                    {{ song.lyrics }}
                 </div>
             </div>
         </div>
