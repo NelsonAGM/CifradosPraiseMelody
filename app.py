@@ -275,9 +275,8 @@ def add_song():
 @app.route('/song/<string:song_id>') # Usar string para el tipo de ID
 def view_song(song_id):
     song = Song.query.get_or_404(song_id) # Obtiene la canción o un error 404
-    # Pasar los tags como una lista para el template si es necesario
-    song.tags = song.get_tags_list()
-    return render_template('view_song.html', song=song)
+    tags_list = song.get_tags_list()
+    return render_template('view_song.html', song=song, tags_list=tags_list)
 
 @app.route('/song/<string:song_id>/edit', methods=['GET', 'POST']) # Usar string para el tipo de ID
 @login_required_simple 
