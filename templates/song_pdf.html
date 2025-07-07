@@ -27,19 +27,22 @@
     .lyrics {
       font-family: 'Fira Mono', 'Consolas', 'Courier New', monospace;
       font-size: 1.08em;
-      white-space: pre-wrap;
+      white-space: pre;
       margin: 0 auto;
       color: #222;
     }
     .line {
-      margin-bottom: 0.2em;
+      margin-bottom: 0em;
       min-height: 1em;
-      line-height: 1.4;
+      line-height: 1.1;
     }
     .chord {
       color: #c47a19;
       font-weight: bold;
       font-family: inherit;
+    }
+    .chord-line {
+      letter-spacing: 0.1em;
     }
   </style>
 </head>
@@ -50,16 +53,9 @@
     {% if song.author %}<br>Autor: {{ song.author }}{% endif %}
   </div>
   <div class="lyrics">
-    {% set lines = song.lyrics.split('\n') %}
-    {% for i in range(lines|length) %}
-      {% set line = lines[i] %}
-      {% if '[' in line and ']' in line %}
-        <div class="line">
-          {{ line|replace('[','<span class="chord">')|replace(']','</span>')|safe }}
-        </div>
-      {% else %}
-        <div class="line">{{ line }}</div>
-      {% endif %}
+    {% for linea in lineas_procesadas %}
+      <div class="line"><span class="chord-line">{{ linea.acordes|safe }}</span></div>
+      <div class="line">{{ linea.letra }}</div>
     {% endfor %}
   </div>
 </body>
