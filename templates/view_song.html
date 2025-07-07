@@ -158,92 +158,38 @@
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script >
-//
-function formatLyricsWithChords(lyrics) {
+<script>
+let currentTransposition = 0;
+
+function formatLyricsWithChordsAndTranspose(lyrics, semitones) {
+    if (semitones !== 0) {
+        lyrics = transposeLyrics(lyrics, semitones);
+    }
     const lines = lyrics.split("\n");
     const formatted = [];
-
+    const chordLineRegex = /^\s*([A-G][#b]?m?(\/([A-G][#b]?m?)?)?\s*)+$/i;
+    const inlineChordRegex = /\[([^\]]+)\]/g;
     for (let line of lines) {
-        const isEmpty = line.trim() === "";
-
-        if (isEmpty) {
-            // Usa un div para las líneas vacías para control de espacio
+        if (line.trim() === "") {
             formatted.push('<div class="song-line empty-line"></div>');
             continue;
         }
-
-        // Procesar línea con acordes
-        // Asegúrate de que los acordes se envuelvan en span.chord-above
-        // y que la línea completa se envuelva en un div.song-line
-        const htmlLineContent = line.replace(/\[([^\]]+)\]/g, (match, chord) => {
-            return `<span class="chord-above" data-original-chord="${chord}">${chord}</span>`;
-        });
-        
-        // ¡CAMBIO CLAVE AQUÍ! Usamos un DIV con la clase song-line en lugar de PRE
-        formatted.push(`<div class="song-line">${htmlLineContent}</div>`);
-    }
-
-    return formatted.join(""); // Usa join("") para que no haya \n entre los divs
-}
-
-// ... (el resto de tu JavaScript como `currentTransposition = 0;`) ...
-
-// Modificación en la función `transposeSong`
-
-
-
-
-
-//
-let currentTransposition = 0;
-
-function transposeSong(direction) {
-    const songLyrics = document.getElementById('songLyrics');
-    const songId = songLyrics.dataset.songId;
-    
-    // Update transposition counter
-    currentTransposition += (direction === 'up') ? 1 : -1;
-    
-    // Get all chord elements
-    // ¡CAMBIO AQUÍ! Ahora solo buscamos los acordes con la clase 'chord-above'
-    const chords = songLyrics.querySelectorAll('.chord-above'); 
-    chords.forEach(chord => {
-        const originalChord = chord.dataset.originalChord || chord.textContent;
-        if (!chord.dataset.originalChord) { // Aquí es originalChord, no originalKey
-            chord.dataset.originalChord = originalChord;
+        if (chordLineRegex.test(line)) {
+            formatted.push(`<div class="chord-line-simple">${line.replace(/ /g, '&nbsp;')}</div>`);
+        } else {
+            const htmlLine = line.replace(inlineChordRegex, function(_, chord) {
+                return `<span class='chord-inline'>${chord}</span>`;
+            });
+            formatted.push(`<div class="lyrics-line">${htmlLine}</div>`);
         }
-        
-        const transposedChord = transposeChord(originalChord, currentTransposition);
-        chord.textContent = transposedChord;
-    });
-    
-    // Update current key display
-    const currentKeySpan = document.getElementById('currentKey');
-    if (currentKeySpan) {
-        const originalKey = currentKeySpan.dataset.originalKey || currentKeySpan.textContent;
-        if (!currentKeySpan.dataset.originalKey) {
-            currentKeySpan.dataset.originalKey = originalKey;
-        }
-        const newKey = transposeChord(originalKey, currentTransposition);
-        currentKeySpan.textContent = newKey;
     }
+    return formatted.join("");
 }
 
-
-function changeFontSize(delta) {
-    const songLyrics = document.getElementById('songLyrics');
-    const currentSize = parseInt(window.getComputedStyle(songLyrics).fontSize);
-    const newSize = Math.max(5, Math.min(36, currentSize + (delta * 2)));
-    songLyrics.style.fontSize = newSize + 'px';
-}
-
-// Initialize lyrics formatting
 document.addEventListener('DOMContentLoaded', function() {
     const lyricsElement = document.getElementById('songLyrics');
-    const rawLyrics = {{ song.lyrics | tojson | safe }};
-    const formattedLyrics = formatLyricsWithChords(rawLyrics);
-    lyricsElement.innerHTML = formattedLyrics;
+    const rawLyrics = `{{ song.lyrics | escape | replace('\n', '\\n') }}`;
+    lyricsElement.innerHTML = formatLyricsWithChordsAndTranspose(rawLyrics, currentTransposition);
 
     // Listener para el botón "Descargar PDF"
     const downloadPdfButton = document.getElementById('downloadPdfButton');
@@ -267,11 +213,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-
-
-
-
 </script>
 {% endblock %}
 
