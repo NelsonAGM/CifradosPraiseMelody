@@ -9,6 +9,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import make_response, render_template, url_for, request
 from weasyprint import HTML
 import io
+import base64
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory,session
 from flask_sqlalchemy import SQLAlchemy # Importar SQLAlchemy
@@ -371,7 +372,10 @@ def presentation_mode(song_id):
 @app.route('/song/<string:song_id>/pdf')
 def song_pdf(song_id):
     song = Song.query.get_or_404(song_id)
-    rendered = render_template('song_pdf.html', song=song)
+    # Leer el logo en base64
+    with open('static/IMAGENES/logo_b64.txt', 'r') as f:
+        logo_b64 = f.read().replace('\n', '')
+    rendered = render_template('song_pdf.html', song=song, logo_b64=logo_b64)
     pdf_file = HTML(string=rendered, base_url=request.url_root).write_pdf()
     response = make_response(pdf_file)
     response.headers['Content-Type'] = 'application/pdf'
