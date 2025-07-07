@@ -20,12 +20,6 @@
       padding: 40px 50px 40px 50px;
       border: 1.5px solid #e3e6ee;
     }
-    .logo {
-      display: block;
-      margin: 0 auto 18px auto;
-      width: 110px;
-      height: auto;
-    }
     .header {
       text-align: center;
       margin-bottom: 18px;
@@ -92,7 +86,6 @@
 <body>
   <div class="pdf-container">
     <div class="header">
-      <img src="data:image/png;base64,{{ logo_b64 }}" alt="Logo" class="logo">
       <div class="title">{{ song.title }}</div>
       {% if song.original_key %}
         <div class="tonality">Tonalidad: <b>{{ song.original_key }}</b></div>

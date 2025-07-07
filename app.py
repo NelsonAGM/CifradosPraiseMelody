@@ -372,10 +372,7 @@ def presentation_mode(song_id):
 @app.route('/song/<string:song_id>/pdf')
 def song_pdf(song_id):
     song = Song.query.get_or_404(song_id)
-    # Leer el logo en base64
-    with open('static/IMAGENES/logo_b64.txt', 'r') as f:
-        logo_b64 = f.read().replace('\n', '')
-    rendered = render_template('song_pdf.html', song=song, logo_b64=logo_b64)
+    rendered = render_template('song_pdf.html', song=song)
     pdf_file = HTML(string=rendered, base_url=request.url_root).write_pdf()
     response = make_response(pdf_file)
     response.headers['Content-Type'] = 'application/pdf'
