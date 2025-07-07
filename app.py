@@ -6,7 +6,7 @@ from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import make_response, render_template, url_for
+from flask import make_response, render_template, url_for, request
 from weasyprint import HTML
 import io
 
@@ -372,7 +372,7 @@ def presentation_mode(song_id):
 def song_pdf(song_id):
     song = Song.query.get_or_404(song_id)
     rendered = render_template('song_pdf.html', song=song)
-    pdf_file = HTML(string=rendered, base_url=url_for('static', _external=True)).write_pdf()
+    pdf_file = HTML(string=rendered, base_url=request.url_root).write_pdf()
     response = make_response(pdf_file)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename="{song.title}.pdf"'
