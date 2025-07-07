@@ -114,7 +114,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="song-lyrics">
-                    <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}" style="font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics }}</div>
+                    <pre class="song-lyrics" style="background: none; border: none; padding: 0; margin: 0; font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics|replace('[','<span class="chord">')|replace(']','</span>')|safe }}</pre>
                 </div>
             </div>
         </div>
