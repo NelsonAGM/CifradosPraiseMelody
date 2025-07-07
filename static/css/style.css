@@ -104,12 +104,12 @@ body.dark-mode .song-card:hover {
   word-break: break-word;
 }
 
-.song-line { 
-    position: relative; /* ¡CRÍTICO! Permite posicionar el acorde absolutamente dentro de esta línea. */
-    padding-top: 5px; /* Crea un espacio en la parte superior donde se asentará el acorde */
-    min-height: 1.5em; /* Asegura que tenga una altura mínima */
-    white-space: pre-wrap; /* Permite que el texto se ajuste, pero mantiene los saltos de línea y espacios del input */
-    word-break: break-word; /* Rompe palabras si la línea es muy larga */
+.song-line {
+    position: relative !important;
+    padding-top: 5px;
+    min-height: 1.5em;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .song-line.empty-line { /* Para líneas vacías */
     min-height: 1.0em; /* Altura más pequeña para saltos de línea */
@@ -152,14 +152,13 @@ body.dark-mode .song-lyrics {
 }
 
 .chord-above {
-    color: var(--chord-color);
+    position: absolute !important;
+    top: 0 !important;
     font-weight: bold;
-    font-size: 0.9em;
-    line-height: 1px;
-    white-space: nowrap;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    margin-bottom: -2px;
-    transform: translateY(-100%);
+    color: peru;
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 2;
 }
 
 
@@ -456,7 +455,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     white-space: pre-wrap; /* Mantiene saltos de línea y espacios */
 }
 .lyrics-segment {
-    white-space: pre; /* Esto es CLAVE: asegura que los &nbsp; y espacios se respeten como en un <pre> */
+    white-space: pre !important;
 }
 
 .fa-music {
