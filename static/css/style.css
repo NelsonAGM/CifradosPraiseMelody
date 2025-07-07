@@ -189,7 +189,7 @@ body.dark-mode .song-lyrics {
     font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
     line-height: 1.1;
     font-size: 16px;
-    color: var(--chord-color);
+    color: peru;
     font-weight: bold;
     white-space: pre;
 }
@@ -460,4 +460,15 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 
 .fa-music {
     margin-right: 8px; /* O el valor que consideres adecuado, por ejemplo, 5px, 10px */
+}
+
+.chord-inline {
+    color: peru;
+    font-weight: bold;
+    font-family: monospace;
+    background: none;
+    padding: 0 2px;
+    border-radius: 2px;
+    display: inline-block;
+    margin: 0 1px;
 }

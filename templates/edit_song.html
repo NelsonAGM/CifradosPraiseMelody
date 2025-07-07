@@ -126,104 +126,49 @@
 
 {% block scripts %}
 <script>
-// Live preview functionality
-
 function formatLyricsWithChords(lyrics) {
     const lines = lyrics.split("\n");
     const formatted = [];
-
-     // *** FACTOR DE AJUSTE ***
-    // Si el preview es "más pequeño" (el acorde se queda atrás), aumenta este valor (ej. 1.01, 1.02)
-    // Si el preview es "más grande" (el acorde se pasa), disminuye este valor (ej. 0.99, 0.98)
-    const OFFSET_FACTOR = 2.3; // Empieza con 1.01 o 1.02, y ajusta según necesites.
-
-    // Crea un span temporal oculto para medir el ancho del texto
-    const measureSpan = document.createElement('span');
-    measureSpan.style.position = 'absolute';
-    measureSpan.style.visibility = 'hidden';
-    measureSpan.style.whiteSpace = 'pre'; // Crucial para contar espacios como caracteres individuales
-    // Asegúrate de que estos estilos coincidan con .song-lyrics en tu CSS
-    measureSpan.style.fontFamily = 'Corbel, Monaco, Menlo, monospace';
-    // El font-size se establecerá dinámicamente en updatePreview para coincidir con el actual de songLyrics
-    measureSpan.style.lineHeight = '1.2';
-    document.body.appendChild(measureSpan);
+    // Regex para detectar si una línea es solo de acordes (acordes y espacios)
+    const chordLineRegex = /^\s*([A-G][#b]?m?(\/([A-G][#b]?m?)?)?\s*)+$/i;
+    // Regex para acordes embebidos
+    const inlineChordRegex = /\[([^\]]+)\]/g;
 
     for (let line of lines) {
-        const isEmpty = line.trim() === "";
-
-        if (isEmpty) {
+        if (line.trim() === "") {
             formatted.push('<div class="song-line empty-line"></div>');
             continue;
         }
-
-        let lineHtmlContent = '';
-        let currentTextForMeasurement = ''; // Acumula el texto para medir su ancho
-        
-        // Divide la línea en segmentos de texto y acordes
-        // Captura el delimitador (el acorde con corchetes)
-        const parts = line.split(/(\[[^\]]+\])/g); 
-
-        parts.forEach(part => {
-            if (part.startsWith('[') && part.endsWith(']')) {
-                // Es un acorde
-                const chordText = part.substring(1, part.length - 1); // Quitar corchetes
-                
-                // Medir el ancho del texto acumulado hasta este punto
-                measureSpan.textContent = currentTextForMeasurement.replace(/ /g, '\u00A0'); // Sustituir espacios por no-breaking spaces
-                const offsetLeft = measureSpan.offsetWidth;
-
-                // Añadir el acorde al HTML de la línea con su posición 'left'
-                lineHtmlContent += `<span class="chord-above" style="left: ${offsetLeft}px;">${chordText}</span>`;
-                
-                // Después de un acorde, no avanzamos el 'currentTextForMeasurement' porque el acorde
-                // no ocupa espacio en el flujo de texto de la letra.
-            } else {
-                // Es texto de la canción (letra o espacios)
-                // Reemplaza los espacios por \u00A0 (non-breaking space) para que no se colapsen
-                const spacedText = part.replace(/ /g, '\u00A0');
-                lineHtmlContent += `<span class="lyrics-segment">${spacedText}</span>`;
-                currentTextForMeasurement += part; // Acumular el texto para la siguiente medición
-            }
-        });
-        
-        formatted.push(`<div class="song-line">${lineHtmlContent}</div>`);
+        // Si la línea es solo de acordes
+        if (chordLineRegex.test(line)) {
+            // Mostrar como línea de acordes
+            formatted.push(`<div class="chord-line-simple">${line.replace(/ /g, '&nbsp;')}</div>`);
+        } else {
+            // Línea de letra, puede tener acordes embebidos
+            const htmlLine = line.replace(inlineChordRegex, function(_, chord) {
+                return `<span class='chord-inline'>${chord}</span>`;
+            });
+            formatted.push(`<div class="lyrics-line">${htmlLine}</div>`);
+        }
     }
-
-    // Asegúrate de limpiar el elemento de medición al final
-    document.body.removeChild(measureSpan);
     return formatted.join("");
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     const titleInput = document.getElementById('title');
     const lyricsInput = document.getElementById('lyrics');
     const titlePreview = document.getElementById('titlePreview');
     const lyricsPreview = document.getElementById('lyricsPreview');
 
-    // Función principal para actualizar el preview
     function updatePreview() {
         const title = titleInput.value.trim() || 'Título de la Alabanza';
         const lyrics = lyricsInput.value.trim() || 'Escribe la letra y los acordes arriba para ver la previsualización...';
-        
-        // Importante: Antes de generar el HTML, actualizar el font-size del measureSpan
-        // para que coincida con el tamaño real de .song-lyrics en el DOM
-        const tempMeasureSpan = document.body.querySelector('span[style*="visibility: hidden"]');
-        if (tempMeasureSpan) { // Asegurarse de que el span exista antes de intentar modificarlo
-            const computedLyricsFontSize = window.getComputedStyle(document.querySelector('.song-lyrics')).fontSize;
-            tempMeasureSpan.style.fontSize = computedLyricsFontSize;
-        }
-
         titlePreview.textContent = title;
         lyricsPreview.innerHTML = formatLyricsWithChords(lyrics);
     }
-
-    // Configurar los listeners
     titleInput.addEventListener('input', updatePreview);
     lyricsInput.addEventListener('input', updatePreview);
-
-    // Llamada inicial para mostrar el preview al cargar la página
-    updatePreview(); 
+    updatePreview();
 });
-
-
 </script>
 {% endblock %}

@@ -129,132 +129,49 @@
 
 {% block scripts %}
 <script>
-
 function formatLyricsWithChords(lyrics) {
     const lines = lyrics.split("\n");
     const formatted = [];
-
-     // *** FACTOR DE AJUSTE ***
-    // Si el preview es "más pequeño" (el acorde se queda atrás), aumenta este valor (ej. 1.01, 1.02)
-    // Si el preview es "más grande" (el acorde se pasa), disminuye este valor (ej. 0.99, 0.98)
-    const OFFSET_FACTOR = 2.3; // Empieza con 1.01 o 1.02, y ajusta según necesites.
-
-    // Crea un span temporal oculto para medir el ancho del texto
-    const measureSpan = document.createElement('span');
-    measureSpan.style.position = 'absolute';
-    measureSpan.style.visibility = 'hidden';
-    measureSpan.style.whiteSpace = 'pre'; // Crucial: Los espacios se cuentan como caracteres individuales
-    measureSpan.style.fontFamily = 'Courier New', 'Monaco', 'Menlo', 'monospace'; // Coincide con .song-lyrics
-    measureSpan.style.lineHeight = '1.2'; // Coincide con .song-lyrics
-    document.body.appendChild(measureSpan);
-
-    // Obtener el font-size computado actual del .song-lyrics
-    // Esto es CRÍTICO para que la medición del measureSpan sea precisa en cualquier tamaño de pantalla.
-    const songLyricsElement = document.getElementById('songLyrics') || document.querySelector('.song-lyrics'); 
-    if (songLyricsElement) {
-        const computedLyricsFontSize = window.getComputedStyle(songLyricsElement).fontSize;
-        measureSpan.style.fontSize = computedLyricsFontSize;
-    } else {
-        // Fallback por defecto si #songLyrics no se encuentra (ej. la primera vez que se carga el script)
-        measureSpan.style.fontSize = '16px'; // Usar el tamaño base por defecto del CSS
-    }
-    
-    // Calcular el ancho de los corchetes
-    // Esto se hace una vez al inicio de la función, ya que el ancho de '[' y ']' es constante.
-    measureSpan.textContent = '[';
-    const bracketWidth = measureSpan.offsetWidth; // Ancho de un solo corchete
-    const totalBracketWidth = bracketWidth * 2; // Ancho de [ y ]
+    // Regex para detectar si una línea es solo de acordes (acordes y espacios)
+    const chordLineRegex = /^\s*([A-G][#b]?m?(\/([A-G][#b]?m?)?)?\s*)+$/i;
+    // Regex para acordes embebidos
+    const inlineChordRegex = /\[([^\]]+)\]/g;
 
     for (let line of lines) {
-        const isEmpty = line.trim() === "";
-
-        if (isEmpty) {
+        if (line.trim() === "") {
             formatted.push('<div class="song-line empty-line"></div>');
-            continue; // Pasa a la siguiente línea si está vacía
+            continue;
         }
-
-        let lineHtmlContent = '';
-        let currentTextForMeasurement = ''; // Acumula el texto (incluyendo espacios y los corchetes de los acordes) para medir su ancho
-        
-        // Divide la línea en segmentos de texto y acordes.
-        // La expresión regular `(\[[^\]]+\])` captura los acordes con corchetes como partes separadas.
-        const parts = line.split(/(\[[^\]]+\])/g); 
-
-        parts.forEach(part => {
-            if (part.startsWith('[') && part.endsWith(']')) {
-                // Es un segmento de acorde (ej: "[Am]")
-                const chordText = part.substring(1, part.length - 1); // Quita los corchetes para mostrar solo el acorde
-                
-                // Medir el ancho del texto acumulado HASTA ESTE PUNTO.
-                // measureSpan.textContent solo necesita el texto plano porque su style.whiteSpace='pre' ya maneja los espacios.
-                measureSpan.textContent = currentTextForMeasurement; 
-                let offsetLeft = measureSpan.offsetWidth;
-
-                // COMPENSACIÓN CLAVE: Sumar el ancho de los corchetes.
-                // Esto "empuja" el acorde en el preview a la derecha, para compensar el espacio que los corchetes ocupan en el textarea original.
-                offsetLeft += totalBracketWidth; 
-
-                // Añadir el acorde al HTML de la línea con su posición 'left' calculada.
-                lineHtmlContent += `<span class="chord-above" style="left: ${offsetLeft}px;">${chordText}</span>`;
-                
-                // Después de un acorde, `currentTextForMeasurement` DEBE avanzar por el ancho que ocupaba el acorde completo (ej. "[Am]")
-                // en el textarea, para que el texto subsiguiente se posicione correctamente.
-                currentTextForMeasurement += part;
-
-            } else {
-                // Es un segmento de texto de la canción (letra o espacios puros)
-                // Se añade tal cual. `.lyrics-segment` con `white-space: pre;` se encargará de mostrar los espacios.
-                lineHtmlContent += `<span class="lyrics-segment">${part}</span>`;
-                // Se acumula el texto original para la medición de la siguiente parte.
-                currentTextForMeasurement += part; 
-            }
-        });
-        
-        formatted.push(`<div class="song-line">${lineHtmlContent}</div>`);
+        // Si la línea es solo de acordes
+        if (chordLineRegex.test(line)) {
+            // Mostrar como línea de acordes
+            formatted.push(`<div class="chord-line-simple">${line.replace(/ /g, '&nbsp;')}</div>`);
+        } else {
+            // Línea de letra, puede tener acordes embebidos
+            const htmlLine = line.replace(inlineChordRegex, function(_, chord) {
+                return `<span class='chord-inline'>${chord}</span>`;
+            });
+            formatted.push(`<div class="lyrics-line">${htmlLine}</div>`);
+        }
     }
-
-    // Al finalizar, remover el span temporal del DOM para limpiar.
-    document.body.removeChild(measureSpan);
-    return formatted.join(""); // Une todas las líneas formateadas en una sola cadena HTML
+    return formatted.join("");
 }
 
-// Funcionalidad de previsualización en vivo para el editor
 document.addEventListener('DOMContentLoaded', function() {
     const titleInput = document.getElementById('title');
     const lyricsInput = document.getElementById('lyrics');
     const titlePreview = document.getElementById('titlePreview');
     const lyricsPreview = document.getElementById('lyricsPreview');
 
-    // Función que actualiza el contenido de la previsualización
     function updatePreview() {
-        // Asegurarse de que el font-size del measureSpan se actualice dinámicamente
-        // para coincidir con el tamaño actual de .song-lyrics (importante para media queries).
-        const songLyricsElement = document.getElementById('songLyrics') || document.querySelector('.song-lyrics'); 
-        if (songLyricsElement) {
-            const computedLyricsFontSize = window.getComputedStyle(songLyricsElement).fontSize;
-            // Busca el measureSpan si ya fue creado por formatLyricsWithChords en una ejecución previa
-            const tempMeasureSpan = document.body.querySelector('span[style*="visibility: hidden"]');
-            if (tempMeasureSpan) {
-                tempMeasureSpan.style.fontSize = computedLyricsFontSize;
-            }
-        }
-
-        // Obtener el título y la letra, usando placeholders si están vacíos
-        const title = titleInput.value.trim() || 'Título de la Alabanza'; 
+        const title = titleInput.value.trim() || 'Título de la Alabanza';
         const lyrics = lyricsInput.value.trim() || 'Escribe la letra y los acordes arriba para ver la previsualización...';
-        
-        // Actualizar el título y el contenido HTML de la letra en el preview
         titlePreview.textContent = title;
         lyricsPreview.innerHTML = formatLyricsWithChords(lyrics);
     }
-
-    // Configurar los event listeners para que el preview se actualice al escribir
     titleInput.addEventListener('input', updatePreview);
     lyricsInput.addEventListener('input', updatePreview);
-
-    // Llamada inicial para mostrar el preview al cargar la página (útil para canciones existentes en edit_song)
-    updatePreview(); 
+    updatePreview();
 });
-
 </script>
 {% endblock %}
