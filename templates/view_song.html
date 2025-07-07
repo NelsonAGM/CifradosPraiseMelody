@@ -46,12 +46,10 @@
                     <div class="col-md-6">
                         <!-- Transpose Controls -->
                         <div class="btn-group me-3" role="group">
-                            <button class="btn btn-outline-primary" onclick="transposeSong('down')" title="Transpose Down">
-                                <i class="fas fa-arrow-down me-1"></i>Bajar tono
-                            </button>
-                            <button class="btn btn-outline-primary" onclick="transposeSong('up')" title="Transpose Up">
-                                <i class="fas fa-arrow-up me-1"></i>Subir Tono
-                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="transposeDownBtn"><i class="fas fa-arrow-down me-1"></i>Bajar tono</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="transposeUpBtn"><i class="fas fa-arrow-up me-1"></i>Subir Tono</button>
+                            <span id="transposeIndicator" class="ms-2 text-muted" style="align-self: center;">Tono original</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="copyLyricsBtn"><i class="fas fa-copy"></i> Copiar letra</button>
                         </div>
                         
                         <!-- Font Size Controls -->
@@ -144,19 +142,30 @@
 </div>
 
 <style>
-.chord {
+.chord-inline {
   color: #c47a19;
   font-weight: bold;
   font-family: inherit;
 }
-.chord-line {
+.chord-line-simple {
+  color: #c47a19;
+  font-weight: bold;
+  font-family: inherit;
   letter-spacing: 0.1em;
+  white-space: pre;
+}
+.lyrics-line {
+  white-space: pre-wrap;
+}
+.song-line.empty-line {
+  height: 1em;
 }
 </style>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/chord_transposer.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 let currentTransposition = 0;
@@ -186,29 +195,66 @@ function formatLyricsWithChordsAndTranspose(lyrics, semitones) {
     return formatted.join("");
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+function getPlainLyricsText(lyrics, semitones) {
+    if (semitones !== 0) {
+        lyrics = transposeLyrics(lyrics, semitones);
+    }
+    return lyrics;
+}
+
+function updateLyricsView() {
     const lyricsElement = document.getElementById('songLyrics');
     const rawLyrics = `{{ song.lyrics | escape | replace('\n', '\\n') }}`;
     lyricsElement.innerHTML = formatLyricsWithChordsAndTranspose(rawLyrics, currentTransposition);
+    const transposeIndicator = document.getElementById('transposeIndicator');
+    if (transposeIndicator) {
+        if (currentTransposition === 0) {
+            transposeIndicator.textContent = 'Tono original';
+        } else {
+            transposeIndicator.textContent = (currentTransposition > 0 ? '+' : '') + currentTransposition + ' semitonos';
+        }
+    }
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+    updateLyricsView();
+    const transposeDownBtn = document.getElementById('transposeDownBtn');
+    const transposeUpBtn = document.getElementById('transposeUpBtn');
+    const copyLyricsBtn = document.getElementById('copyLyricsBtn');
+    if (transposeDownBtn && transposeUpBtn) {
+        transposeDownBtn.addEventListener('click', function() {
+            currentTransposition--;
+            updateLyricsView();
+        });
+        transposeUpBtn.addEventListener('click', function() {
+            currentTransposition++;
+            updateLyricsView();
+        });
+    }
+    if (copyLyricsBtn) {
+        copyLyricsBtn.addEventListener('click', function() {
+            const rawLyrics = `{{ song.lyrics | escape | replace('\n', '\\n') }}`;
+            const plainText = getPlainLyricsText(rawLyrics, currentTransposition);
+            navigator.clipboard.writeText(plainText).then(function() {
+                copyLyricsBtn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                setTimeout(() => {
+                    copyLyricsBtn.innerHTML = '<i class="fas fa-copy"></i> Copiar letra';
+                }, 1500);
+            });
+        });
+    }
     // Listener para el botón "Descargar PDF"
     const downloadPdfButton = document.getElementById('downloadPdfButton');
     if (downloadPdfButton) {
         downloadPdfButton.addEventListener('click', function() {
-            // Selecciona el elemento que quieres convertir a PDF
-            // En este caso, el contenido principal de la canción
-            const element = document.getElementById('songLyrics'); 
-
-            // Configuración de html2pdf.js
+            const element = document.getElementById('songLyrics');
             const opt = {
-                margin: 0.5, // Margen en pulgadas
-                filename: '{{ song.title}}.pdf', // Nombre del archivo PDF
+                margin: 0.5,
+                filename: '{{ song.title}}.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, logging: true, dpi: 192, letterRendering: true },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
-
-            // Genera el PDF
             html2pdf().set(opt).from(element).save();
         });
     }
