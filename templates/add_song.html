@@ -101,6 +101,11 @@
                     <!-- Preview Section -->
                     <div class="mb-4">
                         <h5>Previsualización</h5>
+                        <div class="d-flex mb-2" style="gap: 8px;">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="transposeDownBtn"><i class="fas fa-arrow-down"></i> Bajar tono</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="transposeUpBtn"><i class="fas fa-arrow-up"></i> Subir tono</button>
+                            <span id="transposeIndicator" class="ms-2 text-muted" style="align-self: center;">Tono original</span>
+                        </div>
                         <div class="card">
                             <div class="card-body">
                                 <div id="titlePreview" class="h5 mb-3">El título de la canción aparecerá aquí</div>
@@ -128,26 +133,28 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/chord_transposer.js') }}"></script>
 <script>
-function formatLyricsWithChords(lyrics) {
+let currentTransposition = 0;
+
+function formatLyricsWithChordsAndTranspose(lyrics, semitones) {
+    // Transponer los acordes embebidos [Acorde]
+    if (semitones !== 0) {
+        lyrics = transposeLyrics(lyrics, semitones);
+    }
+    // El resto igual que antes
     const lines = lyrics.split("\n");
     const formatted = [];
-    // Regex para detectar si una línea es solo de acordes (acordes y espacios)
     const chordLineRegex = /^\s*([A-G][#b]?m?(\/([A-G][#b]?m?)?)?\s*)+$/i;
-    // Regex para acordes embebidos
     const inlineChordRegex = /\[([^\]]+)\]/g;
-
     for (let line of lines) {
         if (line.trim() === "") {
             formatted.push('<div class="song-line empty-line"></div>');
             continue;
         }
-        // Si la línea es solo de acordes
         if (chordLineRegex.test(line)) {
-            // Mostrar como línea de acordes
             formatted.push(`<div class="chord-line-simple">${line.replace(/ /g, '&nbsp;')}</div>`);
         } else {
-            // Línea de letra, puede tener acordes embebidos
             const htmlLine = line.replace(inlineChordRegex, function(_, chord) {
                 return `<span class='chord-inline'>${chord}</span>`;
             });
@@ -162,15 +169,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const lyricsInput = document.getElementById('lyrics');
     const titlePreview = document.getElementById('titlePreview');
     const lyricsPreview = document.getElementById('lyricsPreview');
+    const transposeDownBtn = document.getElementById('transposeDownBtn');
+    const transposeUpBtn = document.getElementById('transposeUpBtn');
+    const transposeIndicator = document.getElementById('transposeIndicator');
 
     function updatePreview() {
         const title = titleInput.value.trim() || 'Título de la Alabanza';
         const lyrics = lyricsInput.value.trim() || 'Escribe la letra y los acordes arriba para ver la previsualización...';
         titlePreview.textContent = title;
-        lyricsPreview.innerHTML = formatLyricsWithChords(lyrics);
+        lyricsPreview.innerHTML = formatLyricsWithChordsAndTranspose(lyrics, currentTransposition);
+        if (currentTransposition === 0) {
+            transposeIndicator.textContent = 'Tono original';
+        } else {
+            transposeIndicator.textContent = (currentTransposition > 0 ? '+' : '') + currentTransposition + ' semitonos';
+        }
     }
     titleInput.addEventListener('input', updatePreview);
     lyricsInput.addEventListener('input', updatePreview);
+    if (transposeDownBtn && transposeUpBtn) {
+        transposeDownBtn.addEventListener('click', function() {
+            currentTransposition--;
+            updatePreview();
+        });
+        transposeUpBtn.addEventListener('click', function() {
+            currentTransposition++;
+            updatePreview();
+        });
+    }
     updatePreview();
 });
 </script>
