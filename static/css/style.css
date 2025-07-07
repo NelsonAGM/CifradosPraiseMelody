@@ -177,17 +177,13 @@ body.dark-mode .song-lyrics {
 }
 
 .lyrics-line {
-    margin-top: -14px;
-    margin-bottom: 1px;
-    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
-    line-height: 1.0;
-    font-size: 16px;
-    white-space: pre;
+    margin-top: 0;
+    line-height: 1.1;
 }
 
 .chord-line-simple {
-    margin-bottom: 0;
-    line-height: 0.7;
+    margin-bottom: 1px;
+    line-height: 1.1;
 }
 
 body.dark-mode .chord-line-simple {
