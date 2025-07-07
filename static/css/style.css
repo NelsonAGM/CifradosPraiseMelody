@@ -95,12 +95,12 @@ body.dark-mode .song-card:hover {
   font-family: 'Courier new', 'Monaco', 'Menlo', monospace;
   font-size: 16px;
   line-height: 1.2;
-  /* background-color: #f8f9fa; */
-  /* border: 1px solid #dee2e6; */
-  padding: 0;
-  border-radius: 0;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
   white-space: pre;
-  overflow: visible;
+  overflow: visible; /* elimina scrolls */
   word-break: break-word;
 }
 
@@ -130,12 +130,9 @@ body.dark-mode .song-lyrics {
 }
 
 .chord {
-    color: var(--chord-color);
+    color: peru;
     font-weight: bold;
     font-family: monospace;
-    font-size: 0.9em;
-    margin: 0 1px;
-    display: inline;
 }
 
 .chord-text-line {
@@ -212,7 +209,7 @@ body.dark-mode .chord-above {
 }
 
 /* Legacy chord styles for inline chords */
-/* .chord {
+.chord {
     color: var(--chord-color);
     font-weight: bold;
     background-color: var(--chord-bg);
@@ -225,7 +222,7 @@ body.dark-mode .chord-above {
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(212, 165, 116, 0.3);
-} */
+}
 
 body.dark-mode .chord {
     background-color: rgba(212, 165, 116, 0.2);
