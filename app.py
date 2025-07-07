@@ -365,6 +365,10 @@ def presentation_mode(song_id):
     song.tags = song.get_tags_list()
     return render_template('presentation.html', song=song)
 
+@app.route('/song/<string:song_id>/pdf')
+def song_pdf(song_id):
+    song = Song.query.get_or_404(song_id)
+    return render_template('song_pdf.html', song=song)
 
 # Este bloque se usaba para ejecutar localmente con JSON.
 # Con SQLAclhemy, solo usar para crear tablas en desarrollo local si no usas Alembic.

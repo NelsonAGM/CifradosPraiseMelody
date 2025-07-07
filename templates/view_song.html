@@ -62,9 +62,9 @@
                             <button class="btn btn-outline-secondary" onclick="changeFontSize(1)" title="Increase Font Size">
                                 <i class="fas fa-plus"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-danger" id="downloadPdfButton">
-                         <i class="fas fa-file-pdf me-1"></i> Descargar PDF
-                             </button>
+                            <a href="{{ url_for('song_pdf', song_id=song.id) }}" target="_blank" class="btn btn-outline-danger">
+                                <i class="fas fa-file-pdf me-1"></i> Descargar PDF
+                            </a>
                         </div>
                         
                     </div>
