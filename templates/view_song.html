@@ -15,9 +15,9 @@
                         Tono original: <span id="currentKey">{{ song.original_key }}</span>
                     </p>
                 {% endif %}
-                {% if song.tags %}
+                {% if song.get_tags_list() %}
                     <div class="mb-2">
-                        {% for tag in song.tags %}
+                        {% for tag in song.get_tags_list() %}
                             <span class="badge bg-secondary me-1">{{ tag }}</span>
                         {% endfor %}
                     </div>

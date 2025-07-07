@@ -92,7 +92,7 @@
                     <div class="mb-3">
                         <label for="tags" class="form-label">Tags</label>
                         <input type="text" class="form-control" id="tags" name="tags" 
-                              value="{{ ', '.join(song.tags) }}">
+                              value="{{ song.tags_str if song.tags_str else '' }}">
                     </div>
 
                     <!-- Preview Section -->
