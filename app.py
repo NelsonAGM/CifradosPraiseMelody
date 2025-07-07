@@ -6,6 +6,9 @@ from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask import make_response, render_template, url_for
+from weasyprint import HTML
+import io
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory,session
 from flask_sqlalchemy import SQLAlchemy # Importar SQLAlchemy
@@ -368,7 +371,12 @@ def presentation_mode(song_id):
 @app.route('/song/<string:song_id>/pdf')
 def song_pdf(song_id):
     song = Song.query.get_or_404(song_id)
-    return render_template('song_pdf.html', song=song)
+    rendered = render_template('song_pdf.html', song=song)
+    pdf_file = HTML(string=rendered, base_url=url_for('static', _external=True)).write_pdf()
+    response = make_response(pdf_file)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename="{song.title}.pdf"'
+    return response
 
 # Este bloque se usaba para ejecutar localmente con JSON.
 # Con SQLAclhemy, solo usar para crear tablas en desarrollo local si no usas Alembic.
