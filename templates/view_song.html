@@ -114,7 +114,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="song-lyrics">
-                    <pre class="song-lyrics" style="background: none; border: none; padding: 0; margin: 0; font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics|replace('[','<span class="chord">')|replace(']','</span>')|safe }}</pre>
+                    <pre id="songLyrics" class="song-lyrics" style="background: none; border: none; padding: 0; margin: 0; font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics }}</pre>
                 </div>
             </div>
         </div>
@@ -150,66 +150,63 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="/static/js/chord_transposer.js"></script>
 <script>
-//
-function formatLyricsWithChords(lyrics) {
-    const lines = lyrics.split("\n");
-    const formatted = [];
-
-    for (let line of lines) {
-        const isEmpty = line.trim() === "";
-
-        if (isEmpty) {
-            // Usa un div para las líneas vacías para control de espacio
-            formatted.push('<div class="song-line empty-line"></div>');
-            continue;
-        }
-
-        // Procesar línea con acordes
-        // Asegúrate de que los acordes se envuelvan en span.chord-above
-        // y que la línea completa se envuelva en un div.song-line
-        const htmlLineContent = line.replace(/\[([^\]]+)\]/g, (match, chord) => {
-            return `<span class="chord-above" data-original-chord="${chord}">${chord}</span>`;
-        });
-        
-        // ¡CAMBIO CLAVE AQUÍ! Usamos un DIV con la clase song-line en lugar de PRE
-        formatted.push(`<div class="song-line">${htmlLineContent}</div>`);
-    }
-
-    return formatted.join(""); // Usa join("") para que no haya \n entre los divs
-}
-
-// ... (el resto de tu JavaScript como `currentTransposition = 0;`) ...
-
-// Modificación en la función `transposeSong`
-
-
-
-
-
-//
 let currentTransposition = 0;
 
-function transposeSong(direction) {
-    const songLyrics = document.getElementById('songLyrics');
-    const songId = songLyrics.dataset.songId;
-    
-    // Update transposition counter
-    currentTransposition += (direction === 'up') ? 1 : -1;
-    
-    // Get all chord elements
-    // ¡CAMBIO AQUÍ! Ahora solo buscamos los acordes con la clase 'chord-above'
-    const chords = songLyrics.querySelectorAll('.chord-above'); 
-    chords.forEach(chord => {
-        const originalChord = chord.dataset.originalChord || chord.textContent;
-        if (!chord.dataset.originalChord) { // Aquí es originalChord, no originalKey
-            chord.dataset.originalChord = originalChord;
+function parseChordProLine(line) {
+    // Devuelve { chords: 'C     G     Am', lyrics: 'Cristo, nombre sin igual' }
+    let chords = '';
+    let lyrics = '';
+    let i = 0;
+    while (i < line.length) {
+        if (line[i] === '[') {
+            let j = i + 1;
+            while (j < line.length && line[j] !== ']') j++;
+            const chord = line.slice(i + 1, j);
+            chords += chord;
+            i = j + 1;
+        } else {
+            chords += ' ';
+            lyrics += line[i];
+            i++;
         }
-        
-        const transposedChord = transposeChord(originalChord, currentTransposition);
-        chord.textContent = transposedChord;
-    });
-    
-    // Update current key display
+    }
+    return { chords, lyrics };
+}
+
+function formatLyricsWithChordsAndTranspose(lyrics, semitones) {
+    const lines = lyrics.split('\n');
+    const formatted = [];
+    for (let line of lines) {
+        if (line.trim() === '') {
+            formatted.push('');
+            continue;
+        }
+        if (line.includes('[') && line.includes(']')) {
+            // Línea con acordes embebidos
+            let { chords, lyrics: lyricLine } = parseChordProLine(line);
+            // Transponer acordes
+            chords = chords.replace(/([A-G][#b]?m?(?:\/[A-G][#b]?m?)?)/g, (match) => {
+                return '<span class="chord-above">' + transposeChord(match, semitones) + '</span>';
+            });
+            formatted.push(chords + '\n' + lyricLine);
+        } else {
+            // Solo letra
+            formatted.push(line);
+        }
+    }
+    return formatted.join('\n');
+}
+
+function renderSongLyrics() {
+    const songLyricsDiv = document.getElementById('songLyrics');
+    const rawLyrics = songLyricsDiv.textContent;
+    songLyricsDiv.innerHTML = formatLyricsWithChordsAndTranspose(rawLyrics, currentTransposition);
+}
+
+function transposeSong(direction) {
+    currentTransposition += (direction === 'up') ? 1 : -1;
+    renderSongLyrics();
+    // Actualiza el tono mostrado si existe
     const currentKeySpan = document.getElementById('currentKey');
     if (currentKeySpan) {
         const originalKey = currentKeySpan.dataset.originalKey || currentKeySpan.textContent;
@@ -221,7 +218,6 @@ function transposeSong(direction) {
     }
 }
 
-
 function changeFontSize(delta) {
     const songLyrics = document.getElementById('songLyrics');
     const currentSize = parseInt(window.getComputedStyle(songLyrics).fontSize);
@@ -231,11 +227,7 @@ function changeFontSize(delta) {
 
 // Initialize lyrics formatting
 document.addEventListener('DOMContentLoaded', function() {
-    const songLyricsDiv = document.getElementById('songLyrics');
-    if (songLyricsDiv) {
-        const rawLyrics = songLyricsDiv.textContent;
-        songLyricsDiv.innerHTML = formatLyricsWithChords(rawLyrics);
-    }
+    renderSongLyrics();
 
     // Listener para el botón "Descargar PDF"
     const downloadPdfButton = document.getElementById('downloadPdfButton');
@@ -259,11 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-
-
-
-
 </script>
 {% endblock %}
 
