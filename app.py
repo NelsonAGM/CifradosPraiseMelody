@@ -369,42 +369,10 @@ def presentation_mode(song_id):
     song.tags = song.get_tags_list()
     return render_template('presentation.html', song=song)
 
-def procesar_lineas_con_acordes(lyrics):
-    """
-    Procesa la letra con acordes entre corchetes y devuelve una lista de pares (acordes, letra)
-    para cada línea, alineando los acordes sobre la sílaba correspondiente.
-    """
-    resultado = []
-    for linea in lyrics.split('\n'):
-        acordes = ''
-        texto = ''
-        idx = 0
-        while idx < len(linea):
-            if linea[idx] == '[':
-                # Encontrar el acorde
-                fin = linea.find(']', idx)
-                if fin != -1:
-                    acorde = linea[idx+1:fin]
-                    # Añadir acorde alineado
-                    acordes += f'<span class="chord">{acorde}</span>'
-                    texto += ' ' * len(acorde)
-                    idx = fin + 1
-                else:
-                    texto += linea[idx]
-                    acordes += ' '
-                    idx += 1
-            else:
-                texto += linea[idx]
-                acordes += ' '
-                idx += 1
-        resultado.append({'acordes': acordes.rstrip(), 'letra': texto.rstrip()})
-    return resultado
-
 @app.route('/song/<string:song_id>/pdf')
 def song_pdf(song_id):
     song = Song.query.get_or_404(song_id)
-    lineas_procesadas = procesar_lineas_con_acordes(song.lyrics)
-    rendered = render_template('song_pdf.html', song=song, lineas_procesadas=lineas_procesadas)
+    rendered = render_template('song_pdf.html', song=song)
     pdf_file = HTML(string=rendered, base_url=request.url_root).write_pdf()
     response = make_response(pdf_file)
     response.headers['Content-Type'] = 'application/pdf'
