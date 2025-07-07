@@ -113,8 +113,8 @@
         <!-- Lyrics -->
         <div class="card">
             <div class="card-body">
-                <div id="songLyrics" class="song-lyrics">
-                    <!-- El contenido se cargará dinámicamente -->
+                <div class="song-lyrics">
+                    <pre class="song-lyrics" style="background: none; border: none; padding: 0; margin: 0; font-family: 'Courier New', 'Consolas', monospace; font-size: 16px; white-space: pre;">{{ song.lyrics|replace('[','<span class="chord">')|replace(']','</span>')|safe }}</pre>
                 </div>
             </div>
         </div>
@@ -148,8 +148,7 @@
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="/static/js/chord_transposer.js"></script>
-<script>
+<script >
 //
 function formatLyricsWithChords(lyrics) {
     const lines = lyrics.split("\n");
@@ -231,11 +230,10 @@ function changeFontSize(delta) {
 
 // Initialize lyrics formatting
 document.addEventListener('DOMContentLoaded', function() {
-    const songLyricsDiv = document.getElementById('songLyrics');
-    if (songLyricsDiv) {
-        const rawLyrics = `{{ song.lyrics|safe }}`;
-        songLyricsDiv.innerHTML = formatLyricsWithChords(rawLyrics);
-    }
+    const lyricsElement = document.getElementById('songLyrics');
+    const rawLyrics = {{ song.lyrics | tojson | safe }};
+    const formattedLyrics = formatLyricsWithChords(rawLyrics);
+    lyricsElement.innerHTML = formattedLyrics;
 
     // Listener para el botón "Descargar PDF"
     const downloadPdfButton = document.getElementById('downloadPdfButton');
