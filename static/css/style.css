@@ -130,9 +130,12 @@ body.dark-mode .song-lyrics {
 }
 
 .chord {
-    color: peru;
+    color: var(--chord-color);
     font-weight: bold;
     font-family: monospace;
+    font-size: 0.9em;
+    margin: 0 1px;
+    display: inline;
 }
 
 .chord-text-line {
