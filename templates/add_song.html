@@ -105,6 +105,7 @@
                             <button type="button" class="btn btn-outline-primary btn-sm" id="transposeDownBtn"><i class="fas fa-arrow-down"></i> Bajar tono</button>
                             <button type="button" class="btn btn-outline-primary btn-sm" id="transposeUpBtn"><i class="fas fa-arrow-up"></i> Subir tono</button>
                             <span id="transposeIndicator" class="ms-2 text-muted" style="align-self: center;">Tono original</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" id="copyLyricsBtn"><i class="fas fa-copy"></i> Copiar letra</button>
                         </div>
                         <div class="card">
                             <div class="card-body">
@@ -164,6 +165,14 @@ function formatLyricsWithChordsAndTranspose(lyrics, semitones) {
     return formatted.join("");
 }
 
+function getPlainLyricsText(lyrics, semitones) {
+    // Devuelve la letra transpuesta como texto plano (sin HTML)
+    if (semitones !== 0) {
+        lyrics = transposeLyrics(lyrics, semitones);
+    }
+    return lyrics;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const titleInput = document.getElementById('title');
     const lyricsInput = document.getElementById('lyrics');
@@ -172,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const transposeDownBtn = document.getElementById('transposeDownBtn');
     const transposeUpBtn = document.getElementById('transposeUpBtn');
     const transposeIndicator = document.getElementById('transposeIndicator');
+    const copyLyricsBtn = document.getElementById('copyLyricsBtn');
 
     function updatePreview() {
         const title = titleInput.value.trim() || 'Título de la Alabanza';
@@ -194,6 +204,18 @@ document.addEventListener('DOMContentLoaded', function() {
         transposeUpBtn.addEventListener('click', function() {
             currentTransposition++;
             updatePreview();
+        });
+    }
+    if (copyLyricsBtn) {
+        copyLyricsBtn.addEventListener('click', function() {
+            const lyrics = lyricsInput.value.trim() || '';
+            const plainText = getPlainLyricsText(lyrics, currentTransposition);
+            navigator.clipboard.writeText(plainText).then(function() {
+                copyLyricsBtn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                setTimeout(() => {
+                    copyLyricsBtn.innerHTML = '<i class="fas fa-copy"></i> Copiar letra';
+                }, 1500);
+            });
         });
     }
     updatePreview();
