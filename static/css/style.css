@@ -212,7 +212,7 @@ body.dark-mode .chord-above {
 }
 
 /* Legacy chord styles for inline chords */
-.chord {
+/* .chord {
     color: var(--chord-color);
     font-weight: bold;
     background-color: var(--chord-bg);
@@ -225,7 +225,7 @@ body.dark-mode .chord-above {
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(212, 165, 116, 0.3);
-}
+} */
 
 body.dark-mode .chord {
     background-color: rgba(212, 165, 116, 0.2);
