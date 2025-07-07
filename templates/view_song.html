@@ -114,11 +114,38 @@
         <div class="card">
             <div class="card-body">
 
-                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}">
-                    
-                     
-
-
+                <div id="songLyrics" class="song-lyrics" data-song-id="{{ song.id }}" style="font-family: 'Courier New', 'Consolas', monospace; font-size: 16px;">
+                    {% set lines = song.lyrics.split('\n') %}
+                    {% for line in lines %}
+                        {% if '[' in line and ']' in line %}
+                            {% set chord_line = '' %}
+                            {% set lyric_line = '' %}
+                            {% set i = 0 %}
+                            {% while i < line|length %}
+                                {% if line[i] == '[' %}
+                                    {% set end = line.find(']', i) %}
+                                    {% if end != -1 %}
+                                        {% set chord = line[i+1:end] %}
+                                        {% set chord_line = chord_line + '<span class="chord">' + chord + '</span>' %}
+                                        {% set lyric_line = lyric_line + ' ' * chord|length %}
+                                        {% set i = end + 1 %}
+                                    {% else %}
+                                        {% set lyric_line = lyric_line + line[i] %}
+                                        {% set chord_line = chord_line + ' ' %}
+                                        {% set i = i + 1 %}
+                                    {% endif %}
+                                {% else %}
+                                    {% set lyric_line = lyric_line + line[i] %}
+                                    {% set chord_line = chord_line + ' ' %}
+                                    {% set i = i + 1 %}
+                                {% endif %}
+                            {% endwhile %}
+                            <div style="white-space: pre;"><span class="chord-line">{{ chord_line|safe }}</span></div>
+                            <div style="white-space: pre;">{{ lyric_line }}</div>
+                        {% else %}
+                            <div style="white-space: pre;">{{ line }}</div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -147,6 +174,16 @@
     </div>
 </div>
 
+<style>
+.chord {
+  color: #c47a19;
+  font-weight: bold;
+  font-family: inherit;
+}
+.chord-line {
+  letter-spacing: 0.1em;
+}
+</style>
 
 {% endblock %}
 
