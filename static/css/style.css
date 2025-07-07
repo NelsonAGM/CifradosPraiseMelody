@@ -99,7 +99,7 @@ body.dark-mode .song-card:hover {
   padding: 15px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  white-space: pre-wrap;
+  white-space: pre;
   overflow: visible; /* elimina scrolls */
   word-break: break-word;
 }
