@@ -378,10 +378,8 @@ def song_pdf(song_id):
     response.headers['Content-Disposition'] = f'attachment; filename="{song.title}.pdf"'
     return response
 
-# Este bloque se usaba para ejecutar localmente con JSON.
-# Con SQLAclhemy, solo usar para crear tablas en desarrollo local si no usas Alembic.
-# En Render, se usará el 'Build Command' para db.create_all()
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all() # Esto creará las tablas la primera vez que se ejecute
-#     app.run(debug=True)
+# Bloque de ejecución principal para desarrollo local
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all() # Esto creará las tablas la primera vez que se ejecute
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
