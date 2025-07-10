@@ -58,7 +58,14 @@ function parseChord(chord) {
         suffix = chord.substring(1);
     }
     
-    return { root: root.toUpperCase(), suffix };
+    // Convert to uppercase but preserve the accidental (b or #)
+    if (root.length === 2) {
+        root = root[0].toUpperCase() + root[1];
+    } else {
+        root = root.toUpperCase();
+    }
+    
+    return { root, suffix };
 }
 
 /**
